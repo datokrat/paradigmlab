@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<amalgamatedClass amalgam="de.paulr.homepage.StaticSiteAmalgam">
+   <known>inputDir</known>
+   <known>outputDir</known>
+   <known>knowledgeBase</known>
+</amalgamatedClass>

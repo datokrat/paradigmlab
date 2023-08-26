@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<amalgamatedClass amalgam="de.paulr.knowledge.MarkdownPageAmalgam">
+   <tag>journal</tag>
+   <known>markdown</known>
+   <known>title</known>
+   <constructor name="ofFilePath">
+      <parameter>filePath</parameter>
+   </constructor>
+   <constructor name="ofDirAndDate">
+      <parameter>fileDir</parameter>
+      <parameter>journalDate</parameter>
+   </constructor>
+</amalgamatedClass>

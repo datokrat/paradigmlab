@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<amalgamatedClass amalgam="de.paulr.knowledge.MarkdownPageAmalgam">
+   <known>filePath</known>
+   <constructor name="ofFilePath">
+      <parameter>filePath</parameter>
+   </constructor>
+   <constructor name="ofDirAndName">
+      <parameter>fileDir</parameter>
+      <parameter>fileName</parameter>
+   </constructor>
+</amalgamatedClass>
