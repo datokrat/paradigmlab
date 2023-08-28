@@ -16,6 +16,10 @@ public abstract sealed class Rope<T> implements Iterable<T>
 		return new RopeLeaf<T>(value);
 	}
 
+	public static <T> RopeNode<T> concat(Pair<Rope<T>, Rope<T>> pair) {
+		return concat(pair.first(), pair.second());
+	}
+
 	public static <T> RopeNode<T> concat(Rope<T> left, Rope<T> right) {
 		return new RopeNode<T>(left, right);
 	}

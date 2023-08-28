@@ -14,7 +14,6 @@ public class BatchLatexToHtml {
 	private BufferedWriter input;
 
 	public void start() {
-		System.out.println("Start Batch-KaTeX process.");
 		try {
 			ProcessBuilder pb = new ProcessBuilder();
 			pb.command("batch-katex");
@@ -29,13 +28,10 @@ public class BatchLatexToHtml {
 
 	public String render(String latex) {
 		try {
-			System.out.println("Rendering LaTeX...");
 			input.write(latex);
 			input.newLine();
 			input.flush();
-			System.out.println("Finished writing line.");
 			String html = output.readLine();
-			System.out.println("Finished rendering LaTeX expression.");
 			return html;
 		} catch (IOException e) {
 			throw new RuntimeException(e);

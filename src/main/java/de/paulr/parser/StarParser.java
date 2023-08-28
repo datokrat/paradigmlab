@@ -5,9 +5,9 @@ import de.paulr.util.Rope;
 
 public class StarParser<T> implements IParser<Rope<T>> {
 
-	private IParser<T> parser;
+	private IParser<Rope<T>> parser;
 
-	public StarParser(IParser<T> parser) {
+	public StarParser(IParser<Rope<T>> parser) {
 		this.parser = parser;
 	}
 
@@ -17,9 +17,9 @@ public class StarParser<T> implements IParser<Rope<T>> {
 		int newPosition = position;
 		ParsingContext newContext = context;
 		while (true) {
-			IResultIterator<T> it = parser.parse(text, newPosition, newContext);
+			IResultIterator<Rope<T>> it = parser.parse(text, newPosition, newContext);
 			if (it.hasResult()) {
-				result = result.addRight(it.getResult());
+				result = result.concat(it.getResult());
 				newPosition = it.getNewPosition();
 				newContext = it.getContext();
 			} else {

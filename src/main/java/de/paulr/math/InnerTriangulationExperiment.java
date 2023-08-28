@@ -9,15 +9,17 @@ import java.util.function.Consumer;
 public class InnerTriangulationExperiment {
 
 	public static void main(String[] args) {
-		var fam000 = buildFamily("011", 160000);
+		var fam000 = buildFamily("011", 2000);
 		// var fam011 = buildFamily("011", 1000);
-		// System.out.println(fam000);
+		System.out.println(fam000);
 		// System.out.println(fam011);
 //		System.out.println(
 //			fam000.stream().collect(Collectors.groupingBy(String::length, Collectors.counting())));
-		System.out.println(fam000.stream().mapToInt(String::length).max());
-		System.out.println(
-			fam000.stream().filter(x -> x.matches("(0011)*")).map(String::length).toList());
+
+//		System.out.println(fam000.stream().mapToInt(String::length).max());
+//		System.out.println(
+//			fam000.stream().filter(x -> x.matches("(0011)*")).map(String::length).toList());
+
 //		for (var x : fam000) {
 //			if (fam011.contains(x)) {
 //				System.out.println("collision");

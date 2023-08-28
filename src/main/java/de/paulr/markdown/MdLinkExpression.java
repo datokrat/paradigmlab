@@ -82,7 +82,7 @@ public final class MdLinkExpression implements MdInlineExpression {
 	}
 
 	public enum LinkPlacement {
-		Inline, FloatRight
+		Inline, FloatRight, FullWidth
 	}
 
 }

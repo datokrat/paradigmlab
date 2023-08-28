@@ -60,8 +60,12 @@ public abstract class Parsers {
 		return new AlternativeParser<T>(alternatives, false);
 	}
 
-	public static <T> IParser<Rope<T>> star(IParser<T> parser) {
+	public static <T> IParser<Rope<T>> flatStar(IParser<Rope<T>> parser) {
 		return new StarParser<T>(parser);
+	}
+
+	public static <T> IParser<Rope<T>> star(IParser<T> parser) {
+		return new StarParser<T>(parser.map(Rope::singleton));
 	}
 
 	public static <T> IParser<Rope<T>> starDeprecated(IParser<T> parser) {
@@ -75,6 +79,14 @@ public abstract class Parsers {
 
 	public static <T, U> IParser<Rope<T>> join(IParser<T> parser, IParser<U> delimiter) {
 		return pp(pair(parser, star(pp(pair(delimiter, parser), Pair::second))), Rope::addLeft);
+	}
+
+	public static <T> IParser<Rope<T>> join2(IParser<T> parser, IParser<T> delimiter) {
+		return pp(pair(parser, flatStar(pp(pair(delimiter, parser), Rope::ofPair))), Rope::addLeft);
+	}
+
+	public static IParser<Void> align() {
+		return new AlignParser();
 	}
 
 	public static <T> IParser<T> align(IParser<T> parser) {

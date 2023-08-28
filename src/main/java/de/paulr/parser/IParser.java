@@ -72,6 +72,10 @@ public interface IParser<T> {
 		return Parsers.join(this, delimiter);
 	}
 
+	default IParser<Rope<T>> plusUsing(IParser<T> delimiter) {
+		return Parsers.join2(this, delimiter);
+	}
+
 	default <U> IParser<Rope<T>> star(IParser<U> delimiter) {
 		return Parsers.join(this, delimiter).optional()
 			.map(result -> result.orElseGet(Rope::empty));
@@ -85,7 +89,7 @@ public interface IParser<T> {
 		return new AndParser<T, U>(this, other);
 	}
 
-	default IParser<Object> not() {
+	default IParser<Void> not() {
 		return new NotParser<T>(this);
 	}
 

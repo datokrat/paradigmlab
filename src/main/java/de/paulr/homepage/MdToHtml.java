@@ -112,8 +112,9 @@ public class MdToHtml {
 		}
 
 		String prefix = switch (linkExpression.getPlacement()) {
-		case Inline -> "<img ";
+		case Inline -> "<img class=\"midsized\" ";
 		case FloatRight -> "<img class=\"float-right\" ";
+		case FullWidth -> "<img class=\"full-width\" ";
 		};
 
 		return prefix + "src=\"" + escapeHtmlAttribute(target) + "\" alt=\""

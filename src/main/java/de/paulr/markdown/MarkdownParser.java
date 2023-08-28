@@ -1,5 +1,6 @@
 package de.paulr.markdown;
 
+import static de.paulr.parser.Parsers.align;
 import static de.paulr.parser.Parsers.exact;
 import static de.paulr.parser.Parsers.lockInAlternatives;
 import static de.paulr.parser.Parsers.regex;
@@ -60,7 +61,10 @@ public class MarkdownParser {
 		.and(exact("[").not()) //
 		.and(exact("![").not()) //
 		.and(exact("(float-right)![").not()) //
-		.and(character).plus() //
+		.and(exact("(full-width)![").not()) //
+		.and(character)
+		.plus(newline.thenSilently(align())
+			.thenSilently((exact(" ".repeat(4)).optional().then(exact("- ")).not())).optional()) //
 		.map(chars -> String.join("", chars));
 
 	public static IParser<String> inlineMath = exact("$")
@@ -78,11 +82,15 @@ public class MarkdownParser {
 	public static IParser<MdInlineExpression> floatingImageLinkExpression = exact("(float-right)!")
 		.silentlyThen(link).map(link -> new MdLinkExpression(Optional.empty(), link,
 			LinkType.Internal, true, LinkPlacement.FloatRight));
+	public static IParser<MdInlineExpression> fullWidthImageLinkExpression = exact("(full-width)!")
+		.silentlyThen(link).map(link -> new MdLinkExpression(Optional.empty(), link,
+			LinkType.Internal, true, LinkPlacement.FullWidth));
 	public static IParser<MdInlineExpression> inlineMathExpression = inlineMath
 		.map(MdMathExpression::new);
 	public static IParser<MdInlineExpression> inlineExpression = imageLinkExpression //
 		.or(inlineLinkExpression) //
 		.or(floatingImageLinkExpression) //
+		.or(fullWidthImageLinkExpression) //
 		.or(linkWithCaption) //
 		.or(inlineMathExpression) //
 		.or(inlineTextExpression);
