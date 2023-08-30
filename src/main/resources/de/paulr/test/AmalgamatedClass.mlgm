@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<amalgamatedClass amalgam="de.paulr.test.AmalgamatedClassAmalgam">
+<amalgamatedClass amalgam="de.paulr.amalgam.AmalgamatedClassAmalgam">
    <known>name</known>
 </amalgamatedClass>

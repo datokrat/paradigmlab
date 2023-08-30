@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<amalgamatedClass amalgam="de.paulr.amalgam.example.UserAmalgam">
+   <known>firstName</known>
+   <known>lastName</known>
+   <constructor name="ofFullName">
+      <parameter>fullName</parameter>
+   </constructor>
+</amalgamatedClass>

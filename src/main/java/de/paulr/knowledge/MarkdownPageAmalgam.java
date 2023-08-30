@@ -29,8 +29,18 @@ import de.paulr.markdown.TopLevelMdElement;
 @AmalgamAnnotation
 public class MarkdownPageAmalgam {
 
-	@Feat("markdown")
-	public static String markdown(@Feat("filePath") Path filePath) {
+	private static final String markdown = "markdown";
+	private static final String filePath = "filePath";
+	private static final String fileName = "fileName";
+	private static final String fileDir = "fileDir";
+	private static final String title = "title";
+	private static final String ast = "ast";
+	private static final String references = "references";
+	private static final String metadataEntries = "metadataEntries";
+	private static final String astWithoutMetadata = "astWithoutMetadata";
+
+	@Feat(markdown)
+	public static String markdown(@Feat(filePath) Path filePath) {
 		try {
 			return Files.readString(filePath);
 		} catch (IOException e) {
@@ -38,28 +48,28 @@ public class MarkdownPageAmalgam {
 		}
 	}
 
-	@Feat("fileName")
-	public static String fileName(@Feat("filePath") Path filePath) {
+	@Feat(fileName)
+	public static String fileName(@Feat(filePath) Path filePath) {
 		return filePath.getFileName().toString();
 	}
 
-	@Feat("filePath")
-	public static Path filePathByDirAndName(@Feat("fileDir") Path fileDir,
+	@Feat(filePath)
+	public static Path filePathByDirAndName(@Feat(fileDir) Path fileDir,
 		@Feat("fileName") String fileName) {
 		return fileDir.resolve(fileName);
 	}
 
-	@Feat("title")
-	public static String title(@Feat("fileName") String fileName) {
+	@Feat(title)
+	public static String title(@Feat(fileName) String fileName) {
 		if (!fileName.endsWith(".md")) {
 			throw new RuntimeException("fileName does not end with .md");
 		}
 		return fileName.substring(0, fileName.length() - 3);
 	}
 
-	@Feat("ast")
-	public static Optional<MarkdownPage> ast(@Feat("markdown") String markdown,
-		@Feat("fileName") String fileName) {
+	@Feat(ast)
+	public static Optional<MarkdownPage> ast(@Feat(markdown) String markdown,
+		@Feat(fileName) String fileName) {
 		var it = MarkdownParser.page.parse(markdown, 0);
 		if (it.hasResult()) {
 			return Optional.of(it.getResult());
@@ -69,21 +79,8 @@ public class MarkdownPageAmalgam {
 		}
 	}
 
-	@Feat("journalDate")
-	@Tags("journal")
-	public static LocalDate journalDate(@Feat("title") String title) {
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy_MM_dd");
-		return LocalDate.parse(title, formatter);
-	}
-
-	@Feat("fileName")
-	@Tags("journal")
-	public static String fileNameFromData(@Feat("journalDate") LocalDate date) {
-		return date.format(DateTimeFormatter.ofPattern("yyyy_MM_dd")) + ".md";
-	}
-
-	@Feat("references")
-	public static Set<String> references(@Feat("ast") Optional<MarkdownPage> ast) {
+	@Feat(references)
+	public static Set<String> references(@Feat(ast) Optional<MarkdownPage> ast) {
 		if (ast.isEmpty()) {
 			return Set.of();
 		}
@@ -93,15 +90,8 @@ public class MarkdownPageAmalgam {
 		return references;
 	}
 
-	@Feat("incomingReferences")
-	public static Set<String> incomingReferences(
-		@Feat("incomingReferences") Set<String> incomingReferences) {
-		return incomingReferences;
-	}
-
-	@Feat("metadataEntries")
-	public static Map<String, List<String>> metadataEntries(
-		@Feat("ast") Optional<MarkdownPage> ast) {
+	@Feat(metadataEntries)
+	public static Map<String, List<String>> metadataEntries(@Feat(ast) Optional<MarkdownPage> ast) {
 		if (ast.isEmpty() || ast.get().getElements().isEmpty()) {
 			return Map.of();
 		}
@@ -131,9 +121,8 @@ public class MarkdownPageAmalgam {
 		return metadata;
 	}
 
-	@Feat("astWithoutMetadata")
-	public static Optional<MarkdownPage> astWithoutMetadata(
-		@Feat("ast") Optional<MarkdownPage> ast) {
+	@Feat(astWithoutMetadata)
+	public static Optional<MarkdownPage> astWithoutMetadata(@Feat(ast) Optional<MarkdownPage> ast) {
 		if (ast.isEmpty() || ast.get().getElements().isEmpty()) {
 			return ast;
 		}
@@ -188,6 +177,19 @@ public class MarkdownPageAmalgam {
 		List<MdTextElement> elements = new ArrayList<>();
 		forEachTextElement(ast.get(), elements::add);
 		return elements;
+	}
+
+	@Feat("journalDate")
+	@Tags("journal")
+	public static LocalDate journalDate(@Feat("title") String title) {
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy_MM_dd");
+		return LocalDate.parse(title, formatter);
+	}
+
+	@Feat("fileName")
+	@Tags("journal")
+	public static String fileNameFromData(@Feat("journalDate") LocalDate date) {
+		return date.format(DateTimeFormatter.ofPattern("yyyy_MM_dd")) + ".md";
 	}
 
 	private static void forEachTextElement(MarkdownPage page, Consumer<MdTextElement> consumer) {

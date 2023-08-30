@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<amalgamatedClass amalgam="de.paulr.amalgam.example.UserAmalgam">
+   <tag>messages</tag>
+   <knownClass>de.paulr.amalgam.example.User</knownClass>
+   <constructor name="ofFullName">
+      <parameter>fullName</parameter>
+   </constructor>
+</amalgamatedClass>
