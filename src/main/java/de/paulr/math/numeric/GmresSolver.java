@@ -25,53 +25,67 @@ public class GmresSolver {
 		assert tolerance >= DoubleMath.EPSILON;
 		assert maxIterations > 0;
 
-		int m = 0;
-		BandedMatrix h = new BandedMatrix(m + 1, m, 1, 1);
-		IColumnVector r = b;
-		double beta = r.norm();
+		BandedMatrix h = new BandedMatrix(0, 0, 1, 1);
+		double beta = b.norm();
+		double error = beta; // error when 0 is taken as the solution
 
-		if (beta < tolerance) {
+		if (error < tolerance) {
 			return DenseVector.zero(n);
 		}
 
 		List<IColumnVector> arnoldiBasis = new ArrayList<IColumnVector>();
-		IColumnVector va = r; // unnormalized next Arnoldi vector
-		IColumnVector vb = va.dividedBy(beta);
+
+		// prepare first Arnoldi vector
+		IColumnVector vb = b.dividedBy(error);
 		arnoldiBasis.add(vb);
+
 		QRDecompositionTridiagonal qrDecomposition = null;
 		IMutableColumnVector q = null;
 
-		while (beta >= tolerance && m <= maxIterations) {
-			m++;
-			h.resize(m + 1, m);
-			IColumnVector vNew = A.times(vb);
-			for (int i = 0; i < m; i++) {
-				h.set(i, m - 1, arnoldiBasis.get(i).dot(A.times(vb)));
-				vNew = vNew.minus(arnoldiBasis.get(i).times(h.get(i, m - 1)));
-			}
-			h.set(m, m - 1, vNew.norm());
-			assert !DoubleMath.zero(h.get(m, m - 1)); // TODO?
-			vNew = vNew.dividedBy(h.get(m, m - 1));
-			vb = vNew;
+		System.out.println("Error before first iteration: " + error);
 
-			q = new DenseVector(new double[m + 1]);
+		int m = 1;
+		while (error >= tolerance && m <= maxIterations) {
+			// The last Arnoldi vector was computed by dividing by h[m - 1, m - 2]
+			assert m == 1 || !DoubleMath.zero(h.get(m - 1, m - 2));
+
+			// Arnoldi
+			assert m == arnoldiBasis.size();
+			h.resize(m + 1, m);
+			vb = A.times(vb);
+			for (int i = 0; i < m; i++) {
+				h.set(i, m - 1, arnoldiBasis.get(i).dot(vb));
+				vb = vb.minus(arnoldiBasis.get(i).times(h.get(i, m - 1)));
+			}
+			double vbNorm = vb.norm();
+			h.set(m, m - 1, vbNorm);
+			vb = vb.dividedBy(vbNorm); // We might divide by zero, but we will not use the new
+										// Arnoldi vector since this is the last loop iteration
+			arnoldiBasis.add(vb);
+
+			// Determine the goodness of the estimate in the m-dimensional Krylow space
+			// Note that the freshly generated basis vector is not part of this space yet!
+			q = DenseVector.zero(m + 1);
 			q.set(0, 1);
 			q.multiplyBy(beta);
 			qrDecomposition = QRDecomposerTridiagonal.decompose(h);
-			qrDecomposition.applyQ(q, q);
-			beta = q.get(m); // TODO: compute the exact residual when this is small
+			qrDecomposition.applyInverseQ(q, q); // TODO: do it inversely?
+			error = Math.abs(q.get(m)); // TODO: compute the exact residual when this is small
+
+			System.out.println("Error after iteration " + m + ": " + error);
+
+			m++;
 		}
 
-		if (m == maxIterations) {
+		if (m == maxIterations + 1) {
 			System.out.println("Too many iterations!");
 		}
 
-		IMutableColumnVector y = new DenseVector(new double[m + 1]);
-		qrDecomposition.leastSquares(q, y);
+		IMutableColumnVector y = qrDecomposition.leastSquaresR(q);
 
 		IMutableColumnVector result = DenseVector.zero(n);
-
-		for (int j = 0; j < m; j++) {
+		assert y.getHeight() == m - 1;
+		for (int j = 0; j < m - 1; j++) {
 			double yj = y.get(j);
 			for (int i = 0; i < A.getHeight(); i++) {
 				result.set(i, result.get(i) + yj * arnoldiBasis.get(j).get(i));

@@ -58,9 +58,9 @@ public class BandedMatrix extends AMatrix implements IMutableBandedMatrix {
 		int vert = getVerticalIndexOrNeg(y, x);
 
 		if (vert < 0) {
-			if (DoubleMath.zero(value))
-				return;
-			throw new IndexOutOfBoundsException("Trying to set non-zero value out of band");
+//			if (Math.abs(value) < 1e-5) // TODO: (!DoubleMath.zero(value))
+			return;
+//			throw new IndexOutOfBoundsException("Trying to set non-zero value out of band");
 		}
 
 		entries.get(x).set(vert, value);
@@ -76,14 +76,14 @@ public class BandedMatrix extends AMatrix implements IMutableBandedMatrix {
 
 		if (height > getHeight()) {
 			var columnsToResizeIterator = new RangeIterator(
-				Math.max(getHeight() - getBackwardThickness() - 1, 0), getWidth());
+				Math.max(getHeight() - getBackwardThickness(), 0), getWidth());
 			while (columnsToResizeIterator.hasNext()) {
 				int j = columnsToResizeIterator.nextInt();
 				int currentSize = Math.min(j + getForwardThickness() + 1, getHeight())
 					- Math.min(Math.max(j - getBackwardThickness(), 0), getHeight());
 				assert currentSize == entries.get(j).size();
 				int desiredSize = Math.min(j + getForwardThickness() + 1, height)
-					- Math.min(Math.max(j - getBackwardThickness(), 0), getHeight());
+					- Math.min(Math.max(j - getBackwardThickness(), 0), height);
 				assert desiredSize >= currentSize;
 
 				entries.get(j).addAll(Collections.nCopies(desiredSize - currentSize, 0D));

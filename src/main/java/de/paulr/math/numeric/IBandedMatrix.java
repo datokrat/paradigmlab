@@ -43,6 +43,13 @@ public interface IBandedMatrix extends IRandomAccessMatrix {
 		return new RangeIterator(getColumnLowerBoundIncl(j), getColumnUpperBoundExcl(j));
 	}
 
+	default IMutableColumnVector solveByElimination(IColumnVector rightSideVector) {
+		assert rightSideVector.getHeight() == getHeight();
+		IMutableColumnVector result = DenseVector.zero(getWidth());
+		solveByElimination(rightSideVector, result);
+		return result;
+	}
+
 	/**
 	 * The vectors are allowed to be equal.
 	 */

@@ -8,9 +8,9 @@ public interface IRandomAccessMatrix extends IMatrix {
 
 	default int getBandLength(int deviationFromDiagonal) {
 		if (deviationFromDiagonal < 0) {
-			return Math.min(getHeight(), getWidth() + deviationFromDiagonal);
+			return Math.max(0, Math.min(getHeight(), getWidth() - deviationFromDiagonal));
 		} else {
-			return Math.min(getHeight() - deviationFromDiagonal, getWidth());
+			return Math.max(0, Math.min(getHeight() - deviationFromDiagonal, getWidth()));
 		}
 	}
 

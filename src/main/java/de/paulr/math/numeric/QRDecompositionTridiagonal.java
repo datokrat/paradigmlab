@@ -22,12 +22,28 @@ public class QRDecompositionTridiagonal {
 		return givensRotations;
 	}
 
+	public IMutableColumnVector leastSquaresR(IColumnVector rightSideVector) {
+		return getR().solveByElimination(rightSideVector);
+	}
+
 	/**
 	 * The vectors are allowed to be equal.
 	 */
 	public void leastSquares(IColumnVector rightSideVector, IMutableColumnVector target) {
-		applyInverseQ(rightSideVector, target);
-		r.solveByElimination(target, target);
+		IMutableColumnVector intermediateResult = applyInverseQ(rightSideVector);
+		r.solveByElimination(intermediateResult, target);
+	}
+
+	public IMutableColumnVector leastSquares(IColumnVector rightSideVector) {
+		IMutableColumnVector result = DenseVector.zero(r.getWidth());
+		leastSquares(rightSideVector, result);
+		return result;
+	}
+
+	public IMutableColumnVector applyInverseQ(IColumnVector source) {
+		IMutableColumnVector result = DenseVector.zero(source.getHeight());
+		applyInverseQ(source, result);
+		return result;
 	}
 
 	/**
