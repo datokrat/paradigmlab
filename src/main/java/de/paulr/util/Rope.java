@@ -5,8 +5,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Stack;
 
-public abstract sealed class Rope<T> implements Iterable<T>
-	permits EmptyRope<T>, RopeLeaf<T>, RopeNode<T> {
+public abstract sealed class Rope<T> implements Iterable<T> permits EmptyRope, RopeLeaf, RopeNode {
 
 	public static <T> EmptyRope<T> empty() {
 		return new EmptyRope<T>();

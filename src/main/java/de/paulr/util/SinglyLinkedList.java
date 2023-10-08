@@ -2,7 +2,7 @@ package de.paulr.util;
 
 import java.util.Optional;
 
-public sealed class SinglyLinkedList<T> permits SinglyLinkedList.Nil<T>, SinglyLinkedList.Cons<T> {
+public sealed class SinglyLinkedList<T> permits SinglyLinkedList.Nil, SinglyLinkedList.Cons {
 
 	public boolean isEmpty() {
 		return this instanceof Nil<T>;
