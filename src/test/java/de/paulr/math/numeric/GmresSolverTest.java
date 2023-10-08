@@ -1,6 +1,7 @@
 package de.paulr.math.numeric;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
 
 import java.util.Random;
@@ -41,7 +42,7 @@ public class GmresSolverTest {
 	@Test
 	public void propertyBasedTests() {
 		Random random = new Random(42);
-		int n = 15;
+		int n = 20;
 		IMutableMatrix matrix = new BandedMatrix(n, n, n - 1, n - 1);
 		IMutableColumnVector b = DenseVector.zero(n);
 		for (int i = 0; i < n; i++) {
@@ -52,8 +53,9 @@ public class GmresSolverTest {
 			b.set(i, random.nextDouble());
 		}
 
-		IColumnVector solution = GmresSolver.solveWithSymmetricMatrix(matrix, b, n + 1, 10e-6);
-		assertThat(matrix.times(solution), is(b));
+		IColumnVector solution = GmresSolver.solveWithSymmetricMatrix(matrix, b, n + 2, 10e-6);
+		assertThat(matrix.times(solution).supDistanceTo(b), is(lessThan(1e-6)));
+//		assertThat(matrix.times(solution), is(b));
 	}
 
 }

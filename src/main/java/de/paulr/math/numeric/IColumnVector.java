@@ -17,6 +17,14 @@ public interface IColumnVector {
 		return Math.sqrt(squaredNorm);
 	}
 
+	default double supDistanceTo(IColumnVector other) {
+		double maximum = 0;
+		for (int i = 0; i < getHeight(); i++) {
+			maximum = Math.max(maximum, Math.abs(get(i) - other.get(i)));
+		}
+		return maximum;
+	}
+
 	default IColumnVector minus(IColumnVector other) {
 		assert getHeight() == other.getHeight();
 		IMutableColumnVector difference = new DenseVector(new double[getHeight()]);

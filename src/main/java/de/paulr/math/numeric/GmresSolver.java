@@ -53,10 +53,12 @@ public class GmresSolver {
 			assert m == arnoldiBasis.size();
 			h.resize(m + 1, m);
 			vb = A.times(vb);
-			for (int i = 0; i < m; i++) {
-				h.set(i, m - 1, arnoldiBasis.get(i).dot(vb));
-				vb = vb.minus(arnoldiBasis.get(i).times(h.get(i, m - 1)));
+			if (m >= 2) {
+				h.set(m - 2, m - 1, h.get(m - 1, m - 2));
+				vb = vb.minus(arnoldiBasis.get(m - 2).times(h.get(m - 2, m - 1)));
 			}
+			h.set(m - 1, m - 1, arnoldiBasis.get(m - 1).dot(vb));
+			vb = vb.minus(arnoldiBasis.get(m - 1).times(h.get(m - 1, m - 1)));
 			double vbNorm = vb.norm();
 			h.set(m, m - 1, vbNorm);
 			vb = vb.dividedBy(vbNorm); // We might divide by zero, but we will not use the new
