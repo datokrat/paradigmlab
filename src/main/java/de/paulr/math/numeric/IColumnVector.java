@@ -60,11 +60,17 @@ public interface IColumnVector {
 	}
 
 	default double dot(IColumnVector other) {
-		double result = 0;
+		double positive = 0;
+		double negative = 0;
 		for (int i = 0; i < getHeight(); i++) {
-			result += get(i) * other.get(i);
+			double product = get(i) * other.get(i);
+			if (product >= 0) {
+				positive += product;
+			} else {
+				negative += product;
+			}
 		}
-		return result;
+		return positive + negative;
 	}
 
 }

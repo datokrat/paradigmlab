@@ -8,17 +8,34 @@ public class GmresSolver {
 	private GmresSolver() {
 	}
 
-	public static IColumnVector solveWithSymmetricMatrix(IMatrix A, IColumnVector b,
+	public static GmresSolverResult solveWithSymmetricMatrixAndRestarts(IMatrix A, IColumnVector b,
+		int restartIterations, int maxIterations, double tolerance) {
+		int iterations = 0;
+		double error;
+		IColumnVector approximation = DenseVector.zero(b.getHeight());
+		do {
+			int maxIntermediateIterations = Math.min(restartIterations, maxIterations - iterations);
+			var intermediateResult = solveWithSymmetricMatrix(A, b, approximation,
+				maxIntermediateIterations, tolerance);
+			iterations += intermediateResult.iterations();
+			approximation = intermediateResult.result();
+			error = A.times(approximation).minus(b).norm();
+		} while (error > tolerance && iterations < maxIterations);
+		System.out.println("Error after " + iterations + " iterations: " + error);
+		return new GmresSolverResult(approximation, iterations);
+	}
+
+	public static GmresSolverResult solveWithSymmetricMatrix(IMatrix A, IColumnVector b,
 		IColumnVector guess, int maxIterations, double tolerance) {
-		IColumnVector translation = solveWithSymmetricMatrix(A, b.minus(A.times(guess)),
+		GmresSolverResult result = solveWithSymmetricMatrix(A, b.minus(A.times(guess)),
 			maxIterations, tolerance);
-		return guess.plus(translation);
+		return new GmresSolverResult(guess.plus(result.result()), result.iterations());
 	}
 
 	/**
 	 * Solve with initial guess being zero
 	 */
-	public static IColumnVector solveWithSymmetricMatrix(IMatrix A, IColumnVector b,
+	public static GmresSolverResult solveWithSymmetricMatrix(IMatrix A, IColumnVector b,
 		int maxIterations, double tolerance) {
 		int n = b.getHeight();
 		assert A.getHeight() == n;
@@ -30,7 +47,7 @@ public class GmresSolver {
 		double error = beta; // error when 0 is taken as the solution
 
 		if (error < tolerance) {
-			return DenseVector.zero(n);
+			return new GmresSolverResult(DenseVector.zero(n), 0);
 		}
 
 		List<IColumnVector> arnoldiBasis = new ArrayList<IColumnVector>();
@@ -51,6 +68,9 @@ public class GmresSolver {
 
 			// Arnoldi
 			assert m == arnoldiBasis.size();
+			// Somehow, it really helps to go beyond the mathematically safe limit of
+			// approximation...
+			// assert m <= A.getHeight();
 			h.resize(m + 1, m);
 			vb = A.times(vb);
 			if (m >= 2) {
@@ -74,12 +94,13 @@ public class GmresSolver {
 			qrDecomposition.applyInverseQ(q, q); // TODO: do it inversely?
 			error = Math.abs(q.get(m)); // TODO: compute the exact residual when this is small
 
-			System.out.println("Error after iteration " + m + ": " + error);
+//			System.out.println("Error after iteration " + m + ": " + error);
 
 			m++;
 		}
 
-		if (m == maxIterations + 1) {
+		int iterations = m - 1;
+		if (iterations == maxIterations) {
 			System.out.println("Too many iterations!");
 		}
 
@@ -94,11 +115,10 @@ public class GmresSolver {
 			}
 		}
 
-		System.out.println("Iterations: " + m);
-		System.out.println("H:" + h);
-		System.out.println("Arnoldi basis: " + arnoldiBasis);
+		return new GmresSolverResult(result, iterations);
+	}
 
-		return result;
+	public record GmresSolverResult(IColumnVector result, int iterations) {
 	}
 
 }
