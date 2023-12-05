@@ -16,7 +16,8 @@ public interface IMutableMatrix extends IRandomAccessMatrix {
 		return new DefaultTransposedMutableMatrix(this);
 	}
 
-	static class DefaultMutableMatrixColumn implements IMutableColumnVector, IMutableRowVector {
+	static class DefaultMutableMatrixColumn extends AVector
+		implements IMutableColumnVector, IMutableRowVector {
 
 		private IMutableMatrix matrix;
 		private int j;

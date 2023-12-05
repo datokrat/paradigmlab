@@ -1,5 +1,7 @@
 package de.paulr.math.numeric;
 
+import java.util.List;
+
 public interface IColumnVector {
 
 	int getHeight();
@@ -7,6 +9,8 @@ public interface IColumnVector {
 	double get(int i);
 
 	IRowVector transpose();
+
+	List<Double> toList();
 
 	default double norm() {
 		double squaredNorm = 0;

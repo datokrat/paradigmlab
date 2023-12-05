@@ -1,5 +1,8 @@
 package de.paulr.math.numeric;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public abstract class AVector implements IColumnVector, IRowVector {
 
 	public AVector transpose() {
@@ -8,6 +11,15 @@ public abstract class AVector implements IColumnVector, IRowVector {
 
 	public int getWidth() {
 		return getHeight();
+	}
+
+	@Override
+	public List<Double> toList() {
+		ArrayList<Double> result = new ArrayList<>(getHeight());
+		for (int i = 0; i < getHeight(); i++) {
+			result.add(get(i));
+		}
+		return result;
 	}
 
 	@Override

@@ -8,4 +8,6 @@ public interface IMatrix {
 
 	IColumnVector times(IColumnVector vector);
 
+	IMatrix times(IRandomAccessMatrix other);
+
 }

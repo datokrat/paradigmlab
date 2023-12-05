@@ -10,9 +10,17 @@ public class GmresSolver {
 
 	public static GmresSolverResult solveWithSymmetricMatrixAndRestarts(IMatrix A, IColumnVector b,
 		int restartIterations, int maxIterations, double tolerance) {
+		return solveWithSymmetricMatrixAndRestarts(A, b, DenseVector.zero(b.getHeight()),
+			restartIterations, maxIterations, tolerance);
+	}
+
+	public static GmresSolverResult solveWithSymmetricMatrixAndRestarts(IMatrix A, IColumnVector b,
+		IColumnVector guess, int restartIterations, int maxIterations, double tolerance) {
+		assert guess.getHeight() == b.getHeight();
+		assert b.getHeight() == A.getHeight();
 		int iterations = 0;
 		double error;
-		IColumnVector approximation = DenseVector.zero(b.getHeight());
+		IColumnVector approximation = guess;
 		do {
 			int maxIntermediateIterations = Math.min(restartIterations, maxIterations - iterations);
 			var intermediateResult = solveWithSymmetricMatrix(A, b, approximation,
@@ -68,9 +76,9 @@ public class GmresSolver {
 
 			// Arnoldi
 			assert m == arnoldiBasis.size();
-			// Somehow, it really helps to go beyond the mathematically safe limit of
-			// approximation...
-			// assert m <= A.getHeight();
+			// Somehow, it sometimes helps to go beyond the mathematically sound size of
+			// a basis...
+			// assert m <= n;
 			h.resize(m + 1, m);
 			vb = A.times(vb);
 			if (m >= 2) {

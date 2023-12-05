@@ -1,5 +1,7 @@
 package de.paulr.parser;
 
+import static de.paulr.parser.Parsers.exact;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -11,6 +13,19 @@ import de.paulr.util.Rope;
 public interface IParser<T> {
 
 	IResultIterator<T> parse(String text, int position, ParsingContext context);
+
+	default Optional<T> parseMaybe(String text, int position) {
+		var result = parse(text, position);
+		if (result.hasResult()) {
+			return Optional.of(result.getResult());
+		} else {
+			return Optional.empty();
+		}
+	}
+
+	default T parseOne(String text) {
+		return parse(text, 0).getResult();
+	}
 
 	default IResultIterator<T> parse(String text, int position) {
 		return parse(text, position, new ParsingContext());
@@ -60,12 +75,20 @@ public interface IParser<T> {
 		return Parsers.pair(this, parser);
 	}
 
+	default IParser<T> thenSilently(String string) {
+		return this.thenSilently(exact(string));
+	}
+
 	default <U> IParser<T> thenSilently(IParser<U> parser) {
 		return this.then(parser).map(Pair::first);
 	}
 
 	default <U> IParser<U> silentlyThen(IParser<U> parser) {
 		return this.then(parser).map(Pair::second);
+	}
+
+	default IParser<Rope<T>> plus(String delimiter) {
+		return plus(exact(delimiter));
 	}
 
 	default <U> IParser<Rope<T>> plus(IParser<U> delimiter) {

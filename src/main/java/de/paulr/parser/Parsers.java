@@ -116,4 +116,12 @@ public abstract class Parsers {
 		return x -> y -> fn.apply(x, y);
 	}
 
+	public static IParser<Long> longNumber() {
+		return regex("-?\\d+").map(Long::parseLong);
+	}
+
+	public static IParser<Long> unsignedLongNumber() {
+		return regex("\\d+").map(Long::parseLong);
+	}
+
 }

@@ -18,6 +18,10 @@ public interface IRandomAccessMatrix extends IMatrix {
 		return new DefaultMatrixColumn(this, j);
 	}
 
+	default IRowVector getRow(int i) {
+		return new DefaultMatrixColumn(transpose(), i).transpose();
+	}
+
 	default IColumnVector times(IColumnVector vector) {
 		assert vector.getHeight() == getWidth();
 		double[] result = new double[getHeight()];
@@ -28,6 +32,24 @@ public interface IRandomAccessMatrix extends IMatrix {
 			}
 		}
 		return new DenseVector(result);
+	}
+
+	@Override
+	default IRandomAccessMatrix times(IRandomAccessMatrix other) {
+		assert getWidth() == other.getHeight();
+		BandedMatrix result = new BandedMatrix(getHeight(), other.getWidth(), getWidth(),
+			getHeight());
+		for (int i = 0; i < getWidth(); i++) {
+			if (i % 10 == 0) {
+				System.out.println("Matrix multiplication, iteration " + i);
+			}
+			for (int k = 0; k < other.getHeight(); k++) {
+				for (int j = 0; j < getWidth(); j++) {
+					result.set(i, k, result.get(i, k) + get(i, j) * other.get(j, k));
+				}
+			}
+		}
+		return result;
 	}
 
 	public static class DefaultMatrixColumn extends AVector {

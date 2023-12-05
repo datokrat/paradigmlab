@@ -21,11 +21,11 @@ public class BandedMatrix extends AMatrix implements IMutableBandedMatrix {
 		this.width = 0;
 		entries = new ArrayList<>();
 		resize(height, width);
-//		entries = new ArrayList<>(width);
-//		for (int i = 0; i < width; i++) {
-//			int columnNonzeros = getColumnUpperBoundExcl(i) - getColumnLowerBoundIncl(i);
-//			entries.add(new ArrayList<>(Collections.nCopies(columnNonzeros, 0D)));
-//		}
+	}
+
+	public static BandedMatrix maxBand(int height, int width) {
+		return new BandedMatrix(height, width, Math.min(height, width) - 1,
+			Math.min(height, width) - 1);
 	}
 
 	public int getWidth() {
