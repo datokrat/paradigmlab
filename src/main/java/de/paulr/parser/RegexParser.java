@@ -1,5 +1,6 @@
 package de.paulr.parser;
 
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,7 +19,7 @@ public class RegexParser implements IParser<String> {
 		final Matcher matcher = regex.matcher(text);
 		matcher.region(position, text.length());
 
-		return new IResultIterator<String>() {
+		return new IResultIterator<>() {
 
 			boolean hasResult = matcher.lookingAt();
 
@@ -35,6 +36,11 @@ public class RegexParser implements IParser<String> {
 			@Override
 			public String getResult() {
 				return text.substring(matcher.start(), matcher.end());
+			}
+
+			@Override
+			public DebugTree getDebugTree() {
+				return new DebugTree("regex: " + regex, getResult(), text, position, getNewPosition(), List.of());
 			}
 
 			@Override

@@ -9,19 +9,27 @@ import de.paulr.util.SinglyLinkedList;
 
 public class ParsingContext {
 
-	private SinglyLinkedList<IParser<Void>> indentStack;
+	private final SinglyLinkedList<IParser<Void>> indentStack;
 
-	private SinglyLinkedList<IParser<Void>> endOfExpressionStack;
+	private final SinglyLinkedList<IParser<Void>> endOfExpressionStack;
 
-	public ParsingContext() {
+	private final boolean debug;
+
+	public ParsingContext(boolean debug) {
 		indentStack = SinglyLinkedList.empty();
 		endOfExpressionStack = SinglyLinkedList.empty();
+		this.debug = debug;
 	}
 
 	private ParsingContext(SinglyLinkedList<IParser<Void>> indentStack,
-		SinglyLinkedList<IParser<Void>> endOfExpressionStack) {
+			SinglyLinkedList<IParser<Void>> endOfExpressionStack, boolean debug) {
 		this.indentStack = indentStack;
 		this.endOfExpressionStack = endOfExpressionStack;
+		this.debug = debug;
+	}
+
+	public boolean isDebug() {
+		return debug;
 	}
 
 	public ParsingContext indent(String prefix) {
@@ -33,13 +41,11 @@ public class ParsingContext {
 	}
 
 	public Lens<ParsingContext, SinglyLinkedList<IParser<Void>>> indentStack() {
-		return Lens.startingFrom(this).zoom(ctx -> ctx.indentStack,
-			stack -> new ParsingContext(stack, endOfExpressionStack));
+		return Lens.startingFrom(this).zoom(ctx -> ctx.indentStack, this::withIndentStack);
 	}
 
 	public Lens<ParsingContext, SinglyLinkedList<IParser<Void>>> expressionStack() {
-		return Lens.startingFrom(this).zoom(ctx -> ctx.endOfExpressionStack,
-			stack -> new ParsingContext(indentStack, stack));
+		return Lens.startingFrom(this).zoom(ctx -> ctx.endOfExpressionStack, this::withEndOfExpressionStack);
 	}
 
 	public IParser<Void> indentParser() {
@@ -56,6 +62,14 @@ public class ParsingContext {
 		} else {
 			return Parsers.exact(prefix).then(indentStack.getHead()).mapToNull();
 		}
+	}
+
+	private ParsingContext withEndOfExpressionStack(SinglyLinkedList<IParser<Void>> stack) {
+		return new ParsingContext(indentStack, stack, debug);
+	}
+
+	private ParsingContext withIndentStack(SinglyLinkedList<IParser<Void>> indentStack) {
+		return new ParsingContext(indentStack, endOfExpressionStack, debug);
 	}
 
 	public static interface Lens<T, U> {

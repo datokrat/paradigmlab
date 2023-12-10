@@ -1,5 +1,7 @@
 package de.paulr.parser;
 
+import java.util.List;
+
 import de.paulr.parser.context.ParsingContext;
 import de.paulr.util.Pair;
 
@@ -23,9 +25,11 @@ public class SequenceParser<T, U> implements IParser<Pair<T, U>> {
 		private String text;
 		private IResultIterator<T> firstIt;
 		private IResultIterator<U> secondIt;
+		private final int position;
 
 		public ResultIterator(String text, int position, ParsingContext context) {
 			this.text = text;
+			this.position = position;
 			firstIt = descend(first, text, position, context);
 			handleChangeOfFirstIterator();
 		}
@@ -53,6 +57,12 @@ public class SequenceParser<T, U> implements IParser<Pair<T, U>> {
 		@Override
 		public Pair<T, U> getResult() {
 			return new Pair<>(firstIt.getResult(), secondIt.getResult());
+		}
+
+		@Override
+		public DebugTree getDebugTree() {
+			return new DebugTree("sequence", getResult(), text, position, getNewPosition(),
+					List.of(firstIt.getDebugTree(), secondIt.getDebugTree()));
 		}
 
 		@Override

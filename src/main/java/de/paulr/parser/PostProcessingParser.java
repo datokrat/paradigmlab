@@ -42,6 +42,11 @@ public class PostProcessingParser<T, U> implements IParser<U> {
 		}
 
 		@Override
+		public DebugTree getDebugTree() {
+			return it.getDebugTree().withResult(getResult());
+		}
+
+		@Override
 		public void next() {
 			it.next();
 		}

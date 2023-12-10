@@ -1,9 +1,14 @@
 package de.paulr.util;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.Stack;
+import java.util.function.Function;
+
+import org.apache.commons.lang3.function.TriFunction;
 
 public abstract sealed class Rope<T> implements Iterable<T> permits EmptyRope, RopeLeaf, RopeNode {
 
@@ -52,6 +57,8 @@ public abstract sealed class Rope<T> implements Iterable<T> permits EmptyRope, R
 		return concat(rope, singleton(right));
 	}
 
+	public abstract int size();
+
 	public RopeNode<T> addRight(T item) {
 		return Rope.addRight(this, item);
 	}
@@ -68,6 +75,22 @@ public abstract sealed class Rope<T> implements Iterable<T> permits EmptyRope, R
 		List<T> result = new ArrayList<T>();
 		forEach(result::add);
 		return result;
+	}
+
+	public Set<T> toSet() {
+		Set<T> result = new HashSet<T>();
+		forEach(result::add);
+		return result;
+	}
+
+	public static <T, R> Function<Rope<T>, R> fn(TriFunction<T, T, T, R> fn) {
+		return rope -> {
+			if (rope.size() != 3) {
+				throw new RuntimeException("rope of size 3 expected");
+			}
+			List<T> list = rope.toList();
+			return fn.apply(list.get(0), list.get(1), list.get(2));
+		};
 	}
 
 	@Override

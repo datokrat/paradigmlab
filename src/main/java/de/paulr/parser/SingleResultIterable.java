@@ -1,5 +1,8 @@
 package de.paulr.parser;
 
+import java.util.List;
+
+import de.paulr.parser.IParser.DebugTree;
 import de.paulr.parser.context.ParsingContext;
 
 public class SingleResultIterable<T> implements IParser.IResultIterator<T> {
@@ -7,21 +10,36 @@ public class SingleResultIterable<T> implements IParser.IResultIterator<T> {
 	private boolean hasResult;
 	private T result;
 	private int position;
+	private int initialPosition;
+	private String text;
 	private ParsingContext context;
+	private String label;
+	private List<DebugTree> children;
 
-	private SingleResultIterable(boolean hasResult, T result, int position, ParsingContext context) {
+	private SingleResultIterable(String label, boolean hasResult, T result, String text, int initialPosition,
+			int position, ParsingContext context, List<DebugTree> children) {
 		this.hasResult = hasResult;
 		this.result = result;
 		this.position = position;
+		this.text = text;
+		this.initialPosition = initialPosition;
 		this.context = context;
+		this.label = label;
+		this.children = children;
 	}
 
-	public static <T> SingleResultIterable<T> ok(T result, int position, ParsingContext context) {
-		return new SingleResultIterable<T>(true, result, position, context);
+	public static <T> SingleResultIterable<T> ok(String label, T result, String text, int initialPosition, int position,
+			ParsingContext context) {
+		return new SingleResultIterable<>(label, true, result, text, initialPosition, position, context, List.of());
+	}
+
+	public static <T> SingleResultIterable<T> ok(String label, T result, String text, int initialPosition, int position,
+			ParsingContext context, List<DebugTree> children) {
+		return new SingleResultIterable<>(label, true, result, text, initialPosition, position, context, children);
 	}
 
 	public static <T> SingleResultIterable<T> fail() {
-		return new SingleResultIterable<T>(false, null, -1, null);
+		return new SingleResultIterable<>(null, false, null, null, -1, -1, null, null);
 	}
 
 	@Override
@@ -37,6 +55,11 @@ public class SingleResultIterable<T> implements IParser.IResultIterator<T> {
 	@Override
 	public T getResult() {
 		return result;
+	}
+
+	@Override
+	public DebugTree getDebugTree() {
+		return new DebugTree(label, result, text, initialPosition, position, List.of());
 	}
 
 	@Override

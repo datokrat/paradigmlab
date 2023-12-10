@@ -25,7 +25,7 @@ public class AlternativeParser<T> implements IParser<T> {
 		private int currentAlternative;
 		private IResultIterator<T> currentIt;
 		private String text;
-		private int position;
+		private final int position;
 		private ParsingContext context;
 
 		public ResultIterator(String text, int position, ParsingContext context) {
@@ -60,6 +60,12 @@ public class AlternativeParser<T> implements IParser<T> {
 		@Override
 		public T getResult() {
 			return currentIt.getResult();
+		}
+
+		@Override
+		public DebugTree getDebugTree() {
+			return new DebugTree("alternative", getResult(), text, position, getNewPosition(),
+					List.of(currentIt.getDebugTree()));
 		}
 
 		@Override

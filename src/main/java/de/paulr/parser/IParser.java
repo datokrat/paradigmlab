@@ -28,7 +28,11 @@ public interface IParser<T> {
 	}
 
 	default IResultIterator<T> parse(String text, int position) {
-		return parse(text, position, new ParsingContext());
+		return parse(text, position, new ParsingContext(false));
+	}
+
+	default IResultIterator<T> debug(String text, int position) {
+		return parse(text, position, new ParsingContext(true));
 	}
 
 	default <U> IParser<U> inputTo(IParser<Function<T, U>> dependentParser) {
@@ -99,9 +103,12 @@ public interface IParser<T> {
 		return Parsers.join2(this, delimiter);
 	}
 
+	default IParser<Rope<T>> star(String delimiter) {
+		return star(exact(delimiter));
+	}
+
 	default <U> IParser<Rope<T>> star(IParser<U> delimiter) {
-		return Parsers.join(this, delimiter).optional()
-			.map(result -> result.orElseGet(Rope::empty));
+		return Parsers.join(this, delimiter).optional().map(result -> result.orElseGet(Rope::empty));
 	}
 
 	default IParser<T> end() {
@@ -109,25 +116,23 @@ public interface IParser<T> {
 	}
 
 	default <U> IParser<U> and(IParser<U> other) {
-		return new AndParser<T, U>(this, other);
+		return new AndParser<>(this, other);
 	}
 
 	default IParser<Void> not() {
-		return new NotParser<T>(this);
+		return new NotParser<>(this);
 	}
 
-	default <U> IResultIterator<U> descend(IParser<U> parser, String text, int position,
-		ParsingContext context) {
+	default <U> IResultIterator<U> descend(IParser<U> parser, String text, int position, ParsingContext context) {
 		return parser.parse(text, position, context);
 	}
 
 	default void logStackUp(String text, int position) {
 		CharSequence excerptLeft = text.subSequence(Math.max(0, position - 10), position);
 
-		CharSequence excerptRight = text.subSequence(position,
-			Math.min(position + 10, text.length()));
-		System.out.println(getClass().getSimpleName() + "[" + position + ", '" + excerptLeft + "|"
-			+ excerptRight + "']: ]: stack up");
+		CharSequence excerptRight = text.subSequence(position, Math.min(position + 10, text.length()));
+		System.out.println(getClass().getSimpleName() + "[" + position + ", '" + excerptLeft + "|" + excerptRight
+				+ "']: ]: stack up");
 	}
 
 	default void logStackDown(String text, int position) {
@@ -142,9 +147,31 @@ public interface IParser<T> {
 
 		T getResult();
 
+		DebugTree getDebugTree();
+
 		ParsingContext getContext();
 
 		void next();
+
+	}
+
+	public record DebugTree(String label, Object result, String text, int begin, int end, List<DebugTree> children) {
+
+		public CharSequence coveredText() {
+			return text.subSequence(begin, end);
+		}
+
+		public DebugTree withResult(Object result) {
+			return new DebugTree(label, result, text, begin, end, children);
+		}
+
+		@Override
+		public String toString() {
+			CharSequence truncatedText = coveredText().length() <= 20 ? coveredText()
+					: coveredText().subSequence(0, 10) + "..."
+							+ coveredText().subSequence(coveredText().length() - 7, coveredText().length());
+			return "DebugTree " + label + "[result=" + result + ", text=" + truncatedText + "]";
+		}
 
 	}
 

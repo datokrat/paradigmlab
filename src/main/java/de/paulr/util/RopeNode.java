@@ -18,4 +18,9 @@ public final class RopeNode<T> extends Rope<T> {
 		return right;
 	}
 
+	@Override
+	public int size() {
+		return left.size() + right.size();
+	}
+
 }

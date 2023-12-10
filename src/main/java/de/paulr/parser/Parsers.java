@@ -14,8 +14,7 @@ public abstract class Parsers {
 	public static final IParser<Void> EPSILON = Parsers.exact("").mapToNull();
 
 	public static <T> IParser<T> indented(String prefix, IParser<T> parser) {
-		return new IndentParser(prefix).then(parser).then(new DedentParser())
-			.map(x -> x.first().second());
+		return new IndentParser(prefix).then(parser).then(new DedentParser()).map(x -> x.first().second());
 	}
 
 	public static IParser<String> exact(String s) {
@@ -31,7 +30,7 @@ public abstract class Parsers {
 	}
 
 	public static <T, U> IParser<Pair<T, U>> pair(IParser<T> first, IParser<U> second) {
-		return new SequenceParser<T, U>(first, second);
+		return new SequenceParser<>(first, second);
 	}
 
 	public static <T> IParser<Rope<T>> seq(List<IParser<T>> parsers) {
@@ -49,30 +48,29 @@ public abstract class Parsers {
 	}
 
 	public static <T, U> IParser<U> pp(IParser<T> parser, Function<T, U> fn) {
-		return new PostProcessingParser<T, U>(parser, fn);
+		return new PostProcessingParser<>(parser, fn);
 	}
 
 	public static <T> IParser<T> fstAlt(List<IParser<T>> alternatives) {
-		return new AlternativeParser<T>(alternatives, true);
+		return new AlternativeParser<>(alternatives, true);
 	}
 
 	public static <T> IParser<T> alts(List<IParser<T>> alternatives) {
-		return new AlternativeParser<T>(alternatives, false);
+		return new AlternativeParser<>(alternatives, false);
 	}
 
 	public static <T> IParser<Rope<T>> flatStar(IParser<Rope<T>> parser) {
-		return new StarParser<T>(parser);
+		return new StarParser<>(parser);
 	}
 
 	public static <T> IParser<Rope<T>> star(IParser<T> parser) {
-		return new StarParser<T>(parser.map(Rope::singleton));
+		return new StarParser<>(parser.map(Rope::singleton));
 	}
 
 	public static <T> IParser<Rope<T>> starDeprecated(IParser<T> parser) {
 		ImitationParser<Rope<T>> iStarParser = new ImitationParser<>();
 		IParser<Rope<T>> starParser = fstAlt(
-			List.of(pp(pair(parser, iStarParser), pair -> Rope.addLeft(pair)),
-				pp(exact(""), __ -> Rope.empty())));
+				List.of(pp(pair(parser, iStarParser), pair -> Rope.addLeft(pair)), pp(exact(""), __ -> Rope.empty())));
 		iStarParser.imitate(starParser);
 		return starParser;
 	}
@@ -93,18 +91,18 @@ public abstract class Parsers {
 		return new AlignParser().then(parser).map(Pair::second);
 	}
 
-	public static <T, U> LockInAlternativeParserBuilder<T> lockInAlternatives(
-		IParser<U> lockInParser, IParser<T> followUpParser) {
+	public static <T, U> LockInAlternativeParserBuilder<T> lockInAlternatives(IParser<U> lockInParser,
+			IParser<T> followUpParser) {
 		return new LockInAlternativeParserBuilder<T>().or(lockInParser, followUpParser);
 	}
 
 	public static <T> LockInAlternativeParserBuilder<T> lockInAlternatives(String lockInPrefix,
-		IParser<T> followUpParser) {
+			IParser<T> followUpParser) {
 		return new LockInAlternativeParserBuilder<T>().or(exact(lockInPrefix), followUpParser);
 	}
 
-	public static <T, U> LockInAlternativeParserBuilder<Function<T, U>> depLockInAlts(
-		String lockInPrefix, IParser<Function<T, U>> followUpParser) {
+	public static <T, U> LockInAlternativeParserBuilder<Function<T, U>> depLockInAlts(String lockInPrefix,
+			IParser<Function<T, U>> followUpParser) {
 		return lockInAlternatives(lockInPrefix, followUpParser);
 	}
 
@@ -115,6 +113,10 @@ public abstract class Parsers {
 	public static <T, U, V> Function<T, Function<U, V>> curry(BiFunction<T, U, V> fn) {
 		return x -> y -> fn.apply(x, y);
 	}
+
+	public static IParser<Integer> intNumber = regex("-?\\d+").map(Integer::parseInt);
+
+	public static IParser<Long> longNumber = longNumber();
 
 	public static IParser<Long> longNumber() {
 		return regex("-?\\d+").map(Long::parseLong);

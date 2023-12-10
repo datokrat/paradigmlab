@@ -15,7 +15,7 @@ public class NotParser<T> implements IParser<Void> {
 		if (parser.parse(text, position, context).hasResult()) {
 			return SingleResultIterable.fail();
 		} else {
-			return SingleResultIterable.ok(null, position, context);
+			return SingleResultIterable.ok("not", null, text, position, position, context);
 		}
 	}
 

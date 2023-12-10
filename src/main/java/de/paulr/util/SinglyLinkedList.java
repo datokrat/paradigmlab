@@ -4,6 +4,14 @@ import java.util.Optional;
 
 public sealed class SinglyLinkedList<T> permits SinglyLinkedList.Nil, SinglyLinkedList.Cons {
 
+	public static <T> SinglyLinkedList<T> of(Iterable<T> list) {
+		SinglyLinkedList<T> result = new SinglyLinkedList<>();
+		for (var item : list) {
+			result = result.push(item);
+		}
+		return result;
+	}
+
 	public boolean isEmpty() {
 		return this instanceof Nil<T>;
 	}

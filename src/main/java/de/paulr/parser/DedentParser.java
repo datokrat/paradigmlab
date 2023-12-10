@@ -10,7 +10,7 @@ public class DedentParser implements IParser<Object> {
 	public IResultIterator<Object> parse(String text, int position, ParsingContext context) {
 		Optional<ParsingContext> newStack = context.dedent();
 		if (newStack.isPresent()) {
-			return SingleResultIterable.ok(null, position, newStack.get());
+			return SingleResultIterable.ok("dedent", null, text, position, position, newStack.get());
 		} else {
 			return SingleResultIterable.fail();
 		}

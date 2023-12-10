@@ -12,8 +12,8 @@ public class OpenParser implements IParser<Void> {
 
 	@Override
 	public IResultIterator<Void> parse(String text, int position, ParsingContext context) {
-		return SingleResultIterable.ok(null, position,
-			context.expressionStack().update(stack -> stack.push(closeParser)));
+		return SingleResultIterable.ok("open", null, text, position, position,
+				context.expressionStack().update(stack -> stack.push(closeParser)));
 	}
 
 }

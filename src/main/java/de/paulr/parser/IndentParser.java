@@ -12,7 +12,7 @@ public class IndentParser implements IParser<Object> {
 
 	@Override
 	public IResultIterator<Object> parse(String text, int position, ParsingContext context) {
-		return SingleResultIterable.ok(null, position, context.indent(prefix));
+		return SingleResultIterable.ok("indent", null, text, position, position, context.indent(prefix));
 	}
 
 }

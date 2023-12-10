@@ -12,4 +12,9 @@ public final class RopeLeaf<T> extends Rope<T> {
 		return value;
 	}
 
+	@Override
+	public int size() {
+		return 1;
+	}
+
 }
