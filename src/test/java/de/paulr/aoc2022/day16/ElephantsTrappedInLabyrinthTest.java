@@ -11,12 +11,12 @@ import java.util.Set;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
-import de.paulr.aoc2022.day16.ElephantsInLabyrinth.ActorState;
-import de.paulr.aoc2022.day16.ElephantsInLabyrinth.State;
+import de.paulr.aoc2022.day16.ElephantsTrappedInLabyrinth.ActorState;
+import de.paulr.aoc2022.day16.ElephantsTrappedInLabyrinth.State;
 
-public class ElephantInLabyrithTest {
+public class ElephantsTrappedInLabyrinthTest {
 
-	static ElephantsInLabyrinth again = new ElephantsInLabyrinth();
+	static ElephantsTrappedInLabyrinth again = new ElephantsTrappedInLabyrinth();
 	static {
 		again.readInput(input("2022/16s.txt"));
 		again.preprocess();

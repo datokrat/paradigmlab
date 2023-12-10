@@ -12,11 +12,36 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.slf4j.helpers.MessageFormatter;
+
 import de.paulr.parser.IParser;
 import de.paulr.util.CollectionUtils;
 import de.paulr.util.Rope;
+import de.paulr.util.Stopwatch;
 
 public class AoCUtil {
+
+	// === Output ===
+
+	public static String format(String string, Object... args) {
+		return MessageFormatter.arrayFormat(string, args).getMessage();
+	}
+
+	public static void prynt(Stopwatch stopwatch) {
+		prynt("Time elapsed: {}", stopwatch.elapsedMillis());
+	}
+
+	public static void prynt(String string, Object... args) {
+		System.out.println(format(string, args));
+	}
+
+	public static void prynt(Object... args) {
+		String message = "";
+		for (var arg : args) {
+			message += arg;
+		}
+		System.out.println(message);
+	}
 
 	// === Input ===
 
@@ -33,14 +58,6 @@ public class AoCUtil {
 
 	public static String inputAsString(String filename) {
 		return input(filename).stream().collect(joining("\n"));
-	}
-
-	public static void prynt(Object... args) {
-		String message = "";
-		for (var arg : args) {
-			message += arg;
-		}
-		System.out.println(message);
 	}
 
 	// === Parsers ===

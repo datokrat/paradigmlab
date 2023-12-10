@@ -23,13 +23,13 @@ import de.paulr.util.Pair;
 import de.paulr.util.Pair.OneOrTwo;
 import de.paulr.util.Rope;
 
-class ElephantsInLabyrinth {
+class ElephantsTrappedInLabyrinth {
 
 	static final String FILE = "2022/16.txt";
 	static final long TOTAL_TIME = 26L;
 
 	public static void main(String[] args) {
-		ElephantsInLabyrinth s = new ElephantsInLabyrinth();
+		ElephantsTrappedInLabyrinth s = new ElephantsTrappedInLabyrinth();
 		prynt(s.run(input(FILE)));
 	}
 

@@ -3,6 +3,7 @@ package de.paulr.util;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
@@ -36,6 +37,19 @@ public final class CollectionUtils {
 			i++;
 		}
 		return list;
+	}
+
+	public static <T> List<T> genArrayList(Consumer<ListItemAdder<T>> generator) {
+		List<T> list = new ArrayList<>();
+		generator.accept(list::add);
+		return list;
+	}
+
+	@FunctionalInterface
+	public static interface ListItemAdder<T> {
+
+		void add(T item);
+
 	}
 
 	private CollectionUtils() {
