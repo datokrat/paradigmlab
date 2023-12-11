@@ -59,7 +59,7 @@ import de.paulr.util.Stopwatch;
  */
 class ElephantsTrappedInDPArray {
 
-	static final String FILE = "2022/16.txt";
+	static final String FILE = "2022_16.txt";
 
 	public static void main(String[] args) {
 		ElephantsTrappedInDPArray s = new ElephantsTrappedInDPArray();
@@ -136,7 +136,7 @@ class ElephantsTrappedInDPArray {
 				int last = (i >> 15) % 16;
 				int time = (i >> 19) % (totalTime + 1);
 				g.add(format("{}min: We're at valve {} (flow rate {}). Pressure guaranteed to be released: {}.", time,
-						valveIds.get(last), flowRates.get(last), max[i] - 1));
+					valveIds.get(last), flowRates.get(last), max[i] - 1));
 				i = prev[i];
 			}
 		})).forEach(AoCUtil::prynt);
@@ -218,7 +218,7 @@ class ElephantsTrappedInDPArray {
 		}
 		prynt("Computation took {}ms", sw.elapsedMillis());
 		prynt("With the elephant's help, we can release {} = {} + {} pressure.", maxPressureWithElephant,
-				maxPressureForMask[reasonMask] - 1, maxPressureForMask[reasonMaskElephant] - 1);
+			maxPressureForMask[reasonMask] - 1, maxPressureForMask[reasonMaskElephant] - 1);
 		showStepByStepSolution(reasonsForMask[reasonMask]);
 		prynt();
 		showStepByStepSolution(reasonsForMask[reasonMaskElephant]);
@@ -272,18 +272,18 @@ class ElephantsTrappedInDPArray {
 	// === Input ===
 
 	static IParser<List<String>> tunnelPsr = exact("tunnels lead to valves ")
-			.silentlyThen(regex("..").star(", ").map(Rope::toList)) //
-			.or(exact("tunnel leads to valve ").silentlyThen(regex("..").map(List::of)));
+		.silentlyThen(regex("..").star(", ").map(Rope::toList)) //
+		.or(exact("tunnel leads to valve ").silentlyThen(regex("..").map(List::of)));
 
 	static IParser<InputValve> valvePsr = exact("Valve ").silentlyThen(regex("..")).thenSilently(" has flow rate=")
-			.then(longNumber).thenSilently("; ") //
-			.then(tunnelPsr) //
-			.map(Pair.fn(InputValve::new));
+		.then(longNumber).thenSilently("; ") //
+		.then(tunnelPsr) //
+		.map(Pair.fn(InputValve::new));
 
 	public void readInput(List<String> lines) {
 		List<InputValve> valves = lines.stream().map(valvePsr::parseOne) //
-				.sorted(Comparator.comparing((InputValve v) -> -v.flowRate)) //
-				.toList();
+			.sorted(Comparator.comparing((InputValve v) -> -v.flowRate)) //
+			.toList();
 
 		Map<Pair<String, String>, Long> metric = new HashMap<>();
 		List<String> inputValveIds = new ArrayList<>();
@@ -296,8 +296,8 @@ class ElephantsTrappedInDPArray {
 		SearchUtils.floydWarshall(inputValveIds, metric);
 
 		List<InputValve> relevantValves = valves.stream() //
-				.filter(v -> v.flowRate > 0 || v.id.equals("AA")) //
-				.toList();
+			.filter(v -> v.flowRate > 0 || v.id.equals("AA")) //
+			.toList();
 
 		startValve = relevantValves.size() - 1; // AA is the only valve with flow rate zero
 

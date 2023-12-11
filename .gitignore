@@ -1,3 +1,5 @@
 /target/
 .settings/
 **/nonpublic/
+src/main/java/de/paulr/aoc2023/AoCSettings.java
+src/main/resources/de/paulr/aoc2023/samples/
