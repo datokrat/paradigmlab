@@ -17,6 +17,14 @@ public final class CollectionUtils {
 		return Stream.iterate(begin, i -> i < end, i -> i + 1);
 	}
 
+	public static <T> Stream<T> repeat(T value, long length) {
+		return Stream.generate(() -> value).limit(length);
+	}
+
+	public static Stream<Character> chars(String string) {
+		return string.chars().mapToObj(i -> (char) i);
+	}
+
 	public static <T> List<T> reverse(List<T> list) {
 		List<T> result = new ArrayList<>();
 		for (var i = list.size() - 1; i >= 0; i--) {

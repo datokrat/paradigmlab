@@ -10,7 +10,6 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import org.slf4j.helpers.MessageFormatter;
 
@@ -46,13 +45,11 @@ public class AoCUtil {
 	// === Input ===
 
 	public static List<String> input(String filename) {
-		try (BufferedReader reader = new BufferedReader(
-			new FileReader(AoCSettings.SAMPLE_BASE + filename))) {
+		try (BufferedReader reader = new BufferedReader(new FileReader(AoCSettings.SAMPLE_BASE + filename))) {
 			return reader.lines().toList();
 		} catch (IOException e) {
 			e.printStackTrace();
-			throw new RuntimeException(
-				"Sample file not found: " + AoCSettings.SAMPLE_BASE + filename);
+			throw new RuntimeException("Sample file not found: " + AoCSettings.SAMPLE_BASE + filename);
 		}
 	}
 
@@ -80,14 +77,6 @@ public class AoCUtil {
 	// === ACII matrix ===
 
 	public record Pos(long x, long y) {
-	}
-
-	public static List<Character> stringToList(String string) {
-		return string.chars().mapToObj(i -> (char) i).toList();
-	}
-
-	public static Stream<Character> stringToStream(String string) {
-		return string.chars().mapToObj(i -> (char) i);
 	}
 
 	public static List<Pos> rowPositions(List<String> lines, long y) {

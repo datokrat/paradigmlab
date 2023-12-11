@@ -1,7 +1,6 @@
 package de.paulr.aoc2022.day16;
 
 import static de.paulr.aoc2023.AoCUtil.format;
-import static de.paulr.aoc2023.AoCUtil.input;
 import static de.paulr.aoc2023.AoCUtil.prynt;
 import static de.paulr.parser.Parsers.exact;
 import static de.paulr.parser.Parsers.longNumber;
@@ -14,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 import de.paulr.algorithms.search.SearchUtils;
+import de.paulr.aoc2023.ASolution;
 import de.paulr.aoc2023.AoCUtil;
 import de.paulr.parser.IParser;
 import de.paulr.util.CollectionUtils;
@@ -57,14 +57,18 @@ import de.paulr.util.Stopwatch;
  * 24min: We're at valve FQ (flow rate 12). Pressure guaranteed to be released: 1115.
  * </pre>
  */
-class ElephantsTrappedInDPArray {
+class ElephantsTrappedInDPArray extends ASolution {
 
 	static final String FILE = "2022_16.txt";
+	static final String EXAMPLE = "2022_16s.txt";
+
+	public ElephantsTrappedInDPArray(String filename) {
+		super(filename);
+	}
 
 	public static void main(String[] args) {
-		ElephantsTrappedInDPArray s = new ElephantsTrappedInDPArray();
-		s.readInput(input(FILE));
-		s.dp();
+		var s = new ElephantsTrappedInDPArray(FILE);
+		s.readInput();
 		s.partA();
 		s.partB();
 	}
@@ -167,7 +171,7 @@ class ElephantsTrappedInDPArray {
 		return (int) (long) distances.get(from * 16 + to);
 	}
 
-	public long partA() {
+	public Object partA() {
 		prynt("=== Part A ===");
 		Stopwatch sw = new Stopwatch();
 
@@ -181,7 +185,7 @@ class ElephantsTrappedInDPArray {
 		return best;
 	}
 
-	public long partB() {
+	public Object partB() {
 		prynt();
 		prynt("=== PART B ===");
 		Stopwatch sw = new Stopwatch();
@@ -280,7 +284,7 @@ class ElephantsTrappedInDPArray {
 		.then(tunnelPsr) //
 		.map(Pair.fn(InputValve::new));
 
-	public void readInput(List<String> lines) {
+	public void readInput() {
 		List<InputValve> valves = lines.stream().map(valvePsr::parseOne) //
 			.sorted(Comparator.comparing((InputValve v) -> -v.flowRate)) //
 			.toList();
