@@ -67,39 +67,6 @@ class Solution extends ASolution {
 		return sum;
 	}
 
-	public long anExceedinglySlowRecursiveAttempt(CharSequence record, List<Long> groups) {
-		if (groups.isEmpty()) {
-			return record.chars().allMatch(i -> ((char) i) == '.') ? 1 : 0;
-		}
-
-		if (record.isEmpty()) {
-			return 0L;
-		}
-
-		char c = record.charAt(0);
-		long sum = 0L;
-		if (c != '#') {
-			sum += anExceedinglySlowRecursiveAttempt(record.subSequence(1, record.length()), groups);
-		}
-		if (c != '.') {
-			if (record.length() <= groups.get(0)
-				|| (record.length() > groups.get(0) && record.charAt((int) (long) groups.get(0)) == '#')) {
-				return sum;
-			}
-			for (int i = 0; i < groups.get(0); i++) {
-				if (record.charAt(i) == '.') {
-					return sum;
-				}
-			}
-			if (record.length() == groups.get(0)) {
-				return sum;
-			}
-			sum += anExceedinglySlowRecursiveAttempt(
-				record.subSequence((int) (long) groups.get(0) + 1, record.length()), groups.subList(1, groups.size()));
-		}
-		return sum;
-	}
-
 	public long countValidArrangements(String line) {
 		String[] split = line.split(Pattern.quote(" "));
 		List<Long> expectedGroups = longNumber.star(",").parseOne(split[1]).addRight(0L).toList();
@@ -123,11 +90,11 @@ class Solution extends ASolution {
 		return count;
 	}
 
-	public long countValidArrangements2(String record, List<Long> groups) {
-		return secondTry(record, 0, record.length()).getOrDefault(new State(groups), 0L);
+	public long countValidArrangementsWithMap(String record, List<Long> groups) {
+		return collectPossibleGroupingsAndCount(record, 0, record.length()).getOrDefault(new State(groups), 0L);
 	}
 
-	public Map<State, Long> secondTry(String record, int start, int end) {
+	public Map<State, Long> collectPossibleGroupingsAndCount(String record, int start, int end) {
 		Map<State, Long> states = Map.of(State.init(), 1L);
 		for (int i = start; i < end; i++) {
 			char c = record.charAt(i);
@@ -279,6 +246,39 @@ class Solution extends ASolution {
 			return true;
 		}
 
+	}
+
+	public long anExceedinglySlowRecursiveAttempt(CharSequence record, List<Long> groups) {
+		if (groups.isEmpty()) {
+			return record.chars().allMatch(i -> ((char) i) == '.') ? 1 : 0;
+		}
+
+		if (record.isEmpty()) {
+			return 0L;
+		}
+
+		char c = record.charAt(0);
+		long sum = 0L;
+		if (c != '#') {
+			sum += anExceedinglySlowRecursiveAttempt(record.subSequence(1, record.length()), groups);
+		}
+		if (c != '.') {
+			if (record.length() <= groups.get(0)
+				|| (record.length() > groups.get(0) && record.charAt((int) (long) groups.get(0)) == '#')) {
+				return sum;
+			}
+			for (int i = 0; i < groups.get(0); i++) {
+				if (record.charAt(i) == '.') {
+					return sum;
+				}
+			}
+			if (record.length() == groups.get(0)) {
+				return sum;
+			}
+			sum += anExceedinglySlowRecursiveAttempt(
+				record.subSequence((int) (long) groups.get(0) + 1, record.length()), groups.subList(1, groups.size()));
+		}
+		return sum;
 	}
 
 }
