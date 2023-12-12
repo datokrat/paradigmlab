@@ -7,11 +7,13 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import de.paulr.aoc2023.ASolution;
 import de.paulr.util.CollectionUtils;
 import de.paulr.util.Pair;
+import de.paulr.util.statemachine.DynamicUtils;
 
 class Solution extends ASolution {
 
@@ -50,7 +52,7 @@ class Solution extends ASolution {
 
 	public static void main(String[] args) {
 		var s = new Solution(FILE);
-		s.partB();
+		prynt(s.partB());
 	}
 
 	public Solution(String filename) {
@@ -59,41 +61,14 @@ class Solution extends ASolution {
 
 	@Override
 	public Object partA() {
-		arena = new ArrayList<>();
-		rock = -1;
-
-		int rocksFinished = 0;
-		for (int i = 0; rocksFinished < 2022; i++) {
-			if (rock == -1) {
-				spawnRock(rocksFinished % ROCKS.size());
-			}
-
-			var cmd = lines.get(0).charAt(i % lines.get(0).length());
-			Pair<Integer, Integer> oldPos = position;
-			if (cmd == '<') {
-				position = position.withFirst(Math.max(0, position.first() - 1));
-			} else {
-				position = position.withFirst(Math.min(width - rockWidth, position.first() + 1));
-			}
-
-			if (collision()) {
-				position = oldPos;
-			}
-
-			oldPos = position;
-			position = position.withSecond(position.second() - 1);
-
-			if (position.second() == -1 || collision()) {
-				position = oldPos;
-				consolidate(rock, position, arena);
-				rock = -1;
-				rocksFinished++;
-				continue;
-			}
+		long height = 0L;
+		var state = new State(List.of(), 0, 0);
+		for (int i = 0; i < 2022; i++) {
+			var result = state.propagateRock(lines.get(0));
+			state = result.first();
+			height += result.second();
 		}
-
-		prynt(arena.size());
-		return arena.size();
+		return height;
 	}
 
 	public static void consolidate(int rock, Pair<Integer, Integer> position, List<List<Character>> arena) {
@@ -102,13 +77,6 @@ class Solution extends ASolution {
 
 	public boolean collision() {
 		return rockSet(rock, position).stream().anyMatch(x -> inArena(x));
-	}
-
-	private void spawnRock(int type) {
-		rock = type;
-		rockWidth = ROCKS.get(rock).lines().findFirst().get().length();
-		position = Pair.of(leftsep, arena.size() + downsep);
-
 	}
 
 	public boolean inArena(Pair<Integer, Integer> pos) {
@@ -161,28 +129,60 @@ class Solution extends ASolution {
 
 	@Override
 	public Object partB() {
-		var state = new State(0, List.of(), 0, 0);
-		for (int i = 0; i < 2022; i++) {
-			state = state.propagateRock(lines.get(0));
-			prynt(state);
+		String cmds = lines.get(0);
+		UnaryOperator<State> op = s -> s.propagateRock(cmds).first();
+		var initialState = new State(List.of(), 0, 0);
+		var cycle = DynamicUtils.transToCyclicState(initialState, op);
+
+		long cycleHeight = 0L;
+		long cycleLength = 0L;
+		var state = initialState;
+		while (!state.equals(cycle)) {
+			var result = state.propagateRock(cmds);
+			state = result.first();
+			cycleLength++;
+			cycleHeight += result.second();
 		}
-		return null;
+		prynt("cycle height, length: {}, {}", cycleHeight, cycleLength);
+
+		long iterationHeight = 0L;
+		long iterationLength = 0L;
+		do {
+			var result = state.propagateRock(cmds);
+			state = result.first();
+			iterationLength++;
+			iterationHeight += result.second();
+		} while (!state.equals(cycle));
+		prynt("iteration height, length: {}, {}", iterationHeight, iterationLength);
+
+		long rocksToCombine = 1000000000000L;
+		long necessaryFullIterations = (rocksToCombine - cycleLength) / iterationLength;
+		long remaining = (rocksToCombine - cycleLength) % iterationLength;
+
+		long height = cycleHeight + necessaryFullIterations * iterationHeight;
+		for (int i = 0; i < remaining; i++) {
+			var result = state.propagateRock(cmds);
+			state = result.first();
+			height += result.second();
+		}
+
+		return height;
 	}
 
-	public void pryntArena() {
-		for (var line : arena) {
-			for (var c : line) {
+	public void pryntArena(State state) {
+		for (int i = state.arena.size() - 1; i >= 0; i--) {
+			for (var c : state.arena.get(i)) {
 				System.out.print(c);
 			}
 			System.out.println();
 		}
 	}
 
-	public static final int LOOKBEHIND = 200;
+	public static final int LOOKBEHIND = 40;
 
-	public record State(long height, List<List<Character>> arena, int rock, int cmd) {
+	public record State(List<List<Character>> arena, int rock, int cmd) {
 
-		public State propagateRock(String cmds) {
+		public Pair<State, Long> propagateRock(String cmds) {
 			int ncmd = cmd;
 			int rockWidth = ROCKS.get(rock).lines().findFirst().get().length();
 			Pair<Integer, Integer> position = Pair.of(leftsep, arena.size() + downsep);
@@ -190,7 +190,7 @@ class Solution extends ASolution {
 
 			while (position.second() >= 0 && !collision(position)) {
 				oldPos = position;
-				if (cmds.charAt(cmd) == '<') {
+				if (cmds.charAt(ncmd) == '<') {
 					position = position.withFirst(Math.max(0, position.first() - 1));
 				} else {
 					position = position.withFirst(Math.min(width - rockWidth, position.first() + 1));
@@ -208,11 +208,10 @@ class Solution extends ASolution {
 			position = oldPos;
 			List<List<Character>> arena2 = new ArrayList<>(arena);
 			consolidate(rock, position, arena2);
-			int dheight = arena2.size() - arena.size();
-			long nheight = height + dheight;
+			long dheight = arena2.size() - arena.size();
 			var narena = arena2.subList(Math.max(0, arena2.size() - LOOKBEHIND), arena2.size());
 			int nrock = (rock + 1) % ROCKS.size();
-			return new State(nheight, narena, nrock, ncmd);
+			return Pair.of(new State(narena, nrock, ncmd), dheight);
 		}
 
 		public boolean collision(Pair<Integer, Integer> position) {
