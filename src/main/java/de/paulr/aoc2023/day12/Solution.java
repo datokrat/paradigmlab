@@ -45,6 +45,8 @@ class Solution extends ASolution {
 	@Override
 	public Object partB() {
 		long sum = 0;
+		Map<GlobalDPKey, Long> cache = new HashMap<>();
+		int i = 0;
 		for (var line : lines) {
 			String[] split = line.split(Pattern.quote(" "));
 			List<Long> expectedGroups = longNumber.star(",").parseOne(split[1]).toList();
@@ -55,16 +57,206 @@ class Solution extends ASolution {
 
 			String record = (List.of(split[0], split[0], split[0], split[0], split[0]).stream().collect(joining("?")));
 
-			long r = 0L;
-			r += divideAndConquer(record, 0, record.length(), new StateX(expectedGroups, false, false));
-			r += divideAndConquer(record, 0, record.length(), new StateX(expectedGroups, false, true));
-			r += divideAndConquer(record, 0, record.length(), new StateX(expectedGroups, true, false));
-			r += divideAndConquer(record, 0, record.length(), new StateX(expectedGroups, true, true));
+//			long r = 0L;
+//			r += divideAndConquer(record, 0, record.length(), new StateX(expectedGroups, false, false));
+//			r += divideAndConquer(record, 0, record.length(), new StateX(expectedGroups, false, true));
+//			r += divideAndConquer(record, 0, record.length(), new StateX(expectedGroups, true, false));
+//			r += divideAndConquer(record, 0, record.length(), new StateX(expectedGroups, true, true));
+//			sum += r;
+
+			long r = dp(record, expectedGroups, cache);
 			sum += r;
 
-			prynt("{}: {}", line, r);
+			prynt("{} -> {}: {}", i, line, r);
+			i++;
 		}
 		return sum;
+	}
+
+	public long dp(String record, List<Long> groups) {
+		return dp(record, groups, new HashMap<>());
+	}
+
+	public long dp(String record, List<Long> groups, Map<GlobalDPKey, Long> cache) {
+		record = record + '.';
+		// Map<DPKey, Long> cache = new HashMap<>();
+		long sum = 0L;
+		for (int i = 0; i < record.length(); i++) {
+			char c = record.charAt(i);
+			DPKey key = new DPKey(i, record.length(), 0, groups.size());
+			switch (c) {
+			case '.':
+				continue;
+			case '#':
+				return sum + dpInternalFivefold(key.globalize(record, groups), cache);
+			case '?':
+				sum += dpInternalFivefold(key.globalize(record, groups), cache);
+				continue;
+			}
+		}
+		// Here we may assume that all characters are either . or ?
+		// and in the latter case, the # branch was already taken care of
+		if (groups.size() == 0) {
+			return sum + 1;
+		} else {
+			return sum;
+		}
+	}
+
+	public long dpInternalFivefold(GlobalDPKey key, Map<GlobalDPKey, Long> cache) {
+		if (key.groups.size() % 5 != 0 || key.groups.size() == 0) {
+			throw new RuntimeException();
+		}
+		int step = key.groups.size() / 5;
+
+		long sum = 0L;
+		for (int sep1 = 2; sep1 + 1 < key.record.length(); sep1++) {
+			GlobalDPKey key1 = new DPKey(0, sep1, 0, step).globalize(key.record, key.groups);
+			final long l1 = dpInternal(key1, cache);
+			if (l1 == 0)
+				continue;
+			for (int sep2 = sep1 + 2; sep2 + 1 < key.record.length(); sep2++) {
+				GlobalDPKey key2 = new DPKey(sep1, sep2, step, 2 * step).globalize(key.record, key.groups);
+				final long l2 = dpInternal(key2, cache);
+				if (l2 == 0)
+					continue;
+				for (int sep3 = sep2 + 2; sep3 + 1 < key.record.length(); sep3++) {
+					GlobalDPKey key3 = new DPKey(sep2, sep3, 2 * step, 3 * step).globalize(key.record, key.groups);
+					final long l3 = dpInternal(key3, cache);
+					if (l3 == 0)
+						continue;
+					for (int sep4 = sep3 + 2; sep4 + 1 < key.record.length(); sep4++) {
+						GlobalDPKey key4 = new DPKey(sep3, sep4, 3 * step, 4 * step).globalize(key.record, key.groups);
+						final long l4 = dpInternal(key4, cache);
+						if (l4 == 0)
+							continue;
+						GlobalDPKey key5 = new DPKey(sep4, key.record.length(), 4 * step, key.groups.size())
+							.globalize(key.record, key.groups);
+						long l5 = dpInternal(key5, cache);
+						if (l5 == 0)
+							continue;
+
+						sum += l1 * l2 * l3 * l4 * l5;
+					}
+				}
+			}
+		}
+
+		return sum;
+	}
+
+	/**
+	 * Case groups.size() == 1: returns the number of possibilities such that
+	 * record[char1, char2) starts with `group` many '#', followed only by at least
+	 * one '.'.
+	 */
+	public long dpInternal(GlobalDPKey key, Map<GlobalDPKey, Long> cache) {
+		Long cached = cache.get(key);
+		if (cached != null) {
+			return cached;
+		}
+
+		String record = key.record;
+		List<Long> groups = key.groups;
+
+		if (groups.size() == 0) {
+			return record.length() == 0 ? 1L : 0L;
+		} else if (groups.size() == 1) {
+			long group = groups.get(0);
+			if (record.length() < group + 1)
+				return 0L;
+			for (int i = 0; i < record.length(); i++) {
+				char c = record.charAt(i);
+				if (i < group && c == '.')
+					return 0L;
+				if (i >= group && c == '#')
+					return 0L;
+			}
+			return 1L;
+		}
+
+		long minimalLength = 0L;
+		for (int i = 0; i < groups.size(); i++) {
+			minimalLength += groups.get(i) + 1;
+		}
+		if (record.length() < minimalLength) {
+			return 0L;
+		}
+
+		long sum = 0L;
+		int groupMid = groups.size() / 2;
+		for (int charMid = 1; charMid < record.length(); charMid++) {
+			GlobalDPKey key1 = new DPKey(0, charMid, 0, groupMid).globalize(record, groups);
+			long l1 = dpInternal(key1, cache);
+			if (l1 == 0L) {
+				continue;
+			}
+			GlobalDPKey key2 = new DPKey(charMid, record.length(), groupMid, groups.size()).globalize(record, groups);
+			long l2 = dpInternal(key2, cache);
+			sum += l1 * l2;
+		}
+		return sum;
+	}
+
+	/**
+	 * Case groups.size() == 1: returns the number of possibilities such that
+	 * record[char1, char2) starts with `group` many '#', followed only by at least
+	 * one '.'.
+	 */
+	public long dpInternalLocal(String record, List<Long> groups, DPKey key, Map<DPKey, Long> cache) {
+		Long cached = cache.get(key);
+		if (cached != null) {
+			return cached;
+		}
+
+		if (key.group2 - key.group1 == 0) {
+			return key.char1 == key.char2 ? 1L : 0L;
+		} else if (key.group2 - key.group1 == 1) {
+			long group = groups.get(key.group1);
+			if (key.char2 - key.char1 <= group)
+				return 0L;
+			for (int i = key.char1; i < key.char2; i++) {
+				char c = record.charAt(i);
+				if (i < key.char1 + group && c == '.')
+					return 0L;
+				if (i >= key.char1 + group && c == '#')
+					return 0L;
+			}
+			return 1L;
+		}
+
+		long minimalLength = 0L;
+		for (int i = key.group1; i < key.group2; i++) {
+			minimalLength += groups.get(i) + 1;
+		}
+		if (key.char2 - key.char1 < minimalLength) {
+			return 0L;
+		}
+
+		long sum = 0L;
+		int groupMid = (key.group1 + key.group2) / 2;
+		for (int charMid = key.char1 + 1; charMid < key.char2; charMid++) {
+			DPKey key1 = new DPKey(key.char1, charMid, key.group1, groupMid);
+			long l1 = dpInternalLocal(record, groups, key1, cache);
+			if (l1 == 0L) {
+				continue;
+			}
+			DPKey key2 = new DPKey(charMid, key.char2, groupMid, key.group2);
+			long l2 = dpInternalLocal(record, groups, key2, cache);
+			sum += l1 * l2;
+		}
+		return sum;
+	}
+
+	public record DPKey(int char1, int char2, int group1, int group2) {
+
+		public GlobalDPKey globalize(String record, List<Long> groups) {
+			return new GlobalDPKey(record.substring(char1, char2), groups.subList(group1, group2));
+		}
+	}
+
+	public record GlobalDPKey(String record, List<Long> groups) {
+
 	}
 
 	public long countValidArrangements(String line) {

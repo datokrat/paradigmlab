@@ -25,6 +25,14 @@ public final class CollectionUtils {
 		return string.chars().mapToObj(i -> (char) i);
 	}
 
+	public static String reverse(String string) {
+		StringBuffer sb = new StringBuffer(string.length());
+		for (int i = 0; i < string.length(); i++) {
+			sb.append(string.charAt(i));
+		}
+		return sb.toString();
+	}
+
 	public static <T> List<T> reverse(List<T> list) {
 		List<T> result = new ArrayList<>();
 		for (var i = list.size() - 1; i >= 0; i--) {
