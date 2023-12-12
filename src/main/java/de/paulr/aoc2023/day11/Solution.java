@@ -16,17 +16,19 @@ class Solution {
 	public static void main(String[] args) {
 		var solution = new Solution();
 		solution.readInput("11.txt");
-		prynt(solution.partA());
+		prynt(solution.partB());
 	}
 
-	public List<Pair<Long, Long>> galpos;
+	int h, l;
+	public Set<Integer> cols, rows;
+	public List<String> lines;
 
 	public void readInput(String filename) {
-		var lines = input(filename);
-		int h = lines.size();
-		int l = lines.get(0).length();
-		Set<Integer> cols = new LinkedHashSet<>(CollectionUtils.rangeBetween(0, l).toList());
-		Set<Integer> rows = new LinkedHashSet<>(CollectionUtils.rangeBetween(0, h).toList());
+		lines = input(filename);
+		h = lines.size();
+		l = lines.get(0).length();
+		cols = new LinkedHashSet<>(CollectionUtils.rangeBetween(0, l).toList());
+		rows = new LinkedHashSet<>(CollectionUtils.rangeBetween(0, h).toList());
 		for (int y = 0; y < h; y++) {
 			for (int x = 0; x < l; x++) {
 				char c = lines.get(y).charAt(x);
@@ -37,16 +39,27 @@ class Solution {
 				rows.remove(y);
 			}
 		}
-		galpos = new ArrayList<>();
+	}
+
+	public Object partA() {
+		return sumOfDistances(2L);
+	}
+
+	public Object partB() {
+		return sumOfDistances(1000000L);
+	}
+
+	public long sumOfDistances(long inflationFactor) {
+		List<Pair<Long, Long>> galpos = new ArrayList<>();
 		long ry = 0;
 		for (int y = 0; y < h; y++, ry++) {
 			if (rows.contains(y)) {
-				ry += 1000000 - 1;
+				ry += inflationFactor - 1;
 			}
 			long rx = 0;
 			for (int x = 0; x < l; x++, rx++) {
 				if (cols.contains(x)) {
-					rx += 1000000 - 1;
+					rx += inflationFactor - 1;
 				}
 				char c = lines.get(y).charAt(x);
 				if (c == '.') {
@@ -55,9 +68,7 @@ class Solution {
 				galpos.add(Pair.of(rx, ry));
 			}
 		}
-	}
 
-	public Object partA() {
 		long total = 0;
 		for (int i = 0; i < galpos.size(); i++) {
 			for (int j = i + 1; j < galpos.size(); j++) {
@@ -67,10 +78,6 @@ class Solution {
 			}
 		}
 		return total;
-	}
-
-	public Object partB() {
-		return null;
 	}
 
 }
