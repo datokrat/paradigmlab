@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import de.paulr.aoc2023.ASolution;
+import de.paulr.util.CollectionUtils;
 import de.paulr.util.Pair;
 
 class Solution extends ASolution {
@@ -195,6 +196,8 @@ class Solution extends ASolution {
 			long l2 = dpInternal(key2, cache);
 			sum += l1 * l2;
 		}
+
+		cache.put(key, sum);
 		return sum;
 	}
 
@@ -245,6 +248,8 @@ class Solution extends ASolution {
 			long l2 = dpInternalLocal(record, groups, key2, cache);
 			sum += l1 * l2;
 		}
+
+		cache.put(key, sum);
 		return sum;
 	}
 
@@ -256,6 +261,10 @@ class Solution extends ASolution {
 	}
 
 	public record GlobalDPKey(String record, List<Long> groups) {
+
+		public GlobalDPKey reverse() {
+			return new GlobalDPKey(CollectionUtils.reverse(record), CollectionUtils.reverse(groups));
+		}
 
 	}
 
