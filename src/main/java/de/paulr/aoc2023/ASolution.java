@@ -14,6 +14,14 @@ public abstract class ASolution {
 		lines = input(filename);
 	}
 
+	public ASolution(int year, int day) {
+		this(Integer.toString(year) + "_" + Integer.toString(day) + ".txt");
+	}
+
+	public ASolution(int year, int day, String suffix) {
+		this(Integer.toString(year) + "_" + Integer.toString(day) + suffix + ".txt");
+	}
+
 	public void readInput(String filename) {
 		lines = input(filename);
 		file = inputAsString(filename);

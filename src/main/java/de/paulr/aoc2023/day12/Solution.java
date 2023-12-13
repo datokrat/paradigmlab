@@ -14,6 +14,9 @@ import de.paulr.parser.IParser;
 import de.paulr.util.Pair;
 import de.paulr.util.Rope;
 
+/**
+ * See {@link FiniteNondeterministicInputAutomataSolution} -- it's much faster!
+ */
 class Solution extends ASolution {
 
 	public static final String FILE = "2023_12.txt";
