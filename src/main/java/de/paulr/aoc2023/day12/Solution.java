@@ -48,9 +48,9 @@ class Solution extends ASolution {
 		Map<Query, Long> cache = new HashMap<>();
 		int i = 0;
 		for (var line : lines) {
-			Query query = Query.fromInput(line).repeat(5);
+			Query query = Query.fromInput(line).repeat(5, "?");
 			sum += dp(query, cache);
-			prynt("{} -> {}: {}", i, line, dp(query, cache));
+			prynt("{} -> {}: {} (chache: {})", i, line, dp(query, cache), cache.size());
 			i++;
 		}
 		return sum;
@@ -69,15 +69,14 @@ class Solution extends ASolution {
 		long sum = 0L;
 		for (int i = 0; i < record.length(); i++) {
 			char c = record.charAt(i);
-			Query sanitizedQuery = new Query(record, query.groups).restrict(i, record.length(), 0,
-				query.groups.size());
+			Query sanitizedQuery = new Query(record, query.groups).restrict(i, record.length(), 0, query.groups.size());
 			switch (c) {
 			case '.':
 				continue;
 			case '#':
-				return sum + dpInternalFivefold(sanitizedQuery, cache);
+				return sum + dpInternal(sanitizedQuery, cache);
 			case '?':
-				sum += dpInternalFivefold(sanitizedQuery, cache);
+				sum += dpInternal(sanitizedQuery, cache);
 				continue;
 			}
 		}
@@ -200,10 +199,13 @@ class Solution extends ASolution {
 			return new Query(record.substring(recordBegin, recordEnd), groups.subList(groupsBegin, groupsEnd));
 		}
 
-		public Query repeat(int n) {
+		public Query repeat(int n, String delimiter) {
 			StringBuffer nrecord = new StringBuffer(record.length() * n);
 			List<Long> ngroups = new ArrayList<>(groups.size() * n);
 			for (int i = 0; i < n; i++) {
+				if (i > 0) {
+					nrecord.append(delimiter);
+				}
 				nrecord.append(record);
 				ngroups.addAll(groups);
 			}
