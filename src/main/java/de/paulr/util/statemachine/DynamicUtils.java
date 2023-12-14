@@ -4,7 +4,6 @@ import static de.paulr.aoc2023.AoCUtil.prynt;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 import de.paulr.util.Pair;
@@ -15,8 +14,16 @@ public class DynamicUtils {
 		return p -> Pair.of(p.first() + 1, op.apply(p.second()));
 	}
 
-	public static <S, R> S transToCyclicState2(S state, Function<S, Pair<S, R>> op) {
-		return transToCyclicState(state, s -> op.apply(s).first());
+	public static <S> S iterateSmart(S state, long iterations, UnaryOperator<S> op) {
+		S c = transToCyclicState(state, op);
+		long itToCycle = countStepsBetween(state, c, op);
+		long itInCycle = countRoundtripSteps(c, op);
+		long it = iterations > itToCycle ? ((iterations - itToCycle) % itInCycle) + itToCycle : iterations;
+		S s = state;
+		for (long i = 0; i < it; i++) {
+			s = op.apply(s);
+		}
+		return s;
 	}
 
 	public static <S> S transToCyclicState(S state, UnaryOperator<S> transition) {

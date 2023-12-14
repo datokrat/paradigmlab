@@ -8,6 +8,7 @@ import static java.util.stream.Collectors.toMap;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -95,6 +96,18 @@ public class AoCUtil {
 		return CollectionUtils.rangeBetween(0L, lines.size()) //
 			.flatMap(y -> rowPositions(lines, y).stream()) //
 			.collect(toMap(pos -> pos, pos -> lines.get((int) pos.y).charAt((int) pos.x)));
+	}
+
+	public static List<String> transpose(List<String> pattern) {
+		List<String> t = new ArrayList<>();
+		for (int i = 0; i < pattern.get(0).length(); i++) {
+			StringBuffer sb = new StringBuffer();
+			for (int y = 0; y < pattern.size(); y++) {
+				sb.append(pattern.get(y).charAt(i));
+			}
+			t.add(sb.toString());
+		}
+		return t;
 	}
 
 }
