@@ -12,6 +12,7 @@ public abstract class ASolution {
 
 	public ASolution(String filename) {
 		lines = input(filename);
+		file = inputAsString(filename);
 	}
 
 	public ASolution(int year, int day) {
