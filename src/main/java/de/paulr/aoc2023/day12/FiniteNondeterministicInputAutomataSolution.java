@@ -1,10 +1,9 @@
 package de.paulr.aoc2023.day12;
 
 import static de.paulr.aoc2023.AoCUtil.prynt;
-import static de.paulr.parser.Parsers.longNumber;
-import static de.paulr.parser.Parsers.regex;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,13 +11,11 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import de.paulr.aoc2023.ASolution;
-import de.paulr.parser.IParser;
-import de.paulr.util.Pair;
-import de.paulr.util.Rope;
 import de.paulr.util.Stopwatch;
 
 class FiniteNondeterministicInputAutomataSolution extends ASolution {
 
+	public static Stopwatch initSw = new Stopwatch();
 	public static Stopwatch forwardSw = new Stopwatch();
 	public static Stopwatch backwardSw = new Stopwatch();
 	public static Stopwatch combineSw = new Stopwatch();
@@ -33,6 +30,12 @@ class FiniteNondeterministicInputAutomataSolution extends ASolution {
 		Stopwatch sw = new Stopwatch();
 		prynt(s.partB());
 		prynt("Part B took {}ms", sw.elapsedMillis());
+		prynt("PARSE took {}ms", parseSw.totalRecordedMillis());
+		prynt("INIT took {}ms", initSw.totalRecordedMillis());
+		prynt("FORWARD took {}ms", forwardSw.totalRecordedMillis());
+		prynt("BACKWARD took {}ms", backwardSw.totalRecordedMillis());
+		prynt("COMBINE took {}ms", combineSw.totalRecordedMillis());
+		prynt("LOOP BODY took {}ms", sw.totalRecordedMillis());
 	}
 
 	@Override
@@ -44,21 +47,26 @@ class FiniteNondeterministicInputAutomataSolution extends ASolution {
 	public Object partB() {
 		parseSw.reset();
 		var queries = lines.stream().map(Query::fromInput).map(q -> q.repeat(5, "?")).toList();
+//		List<Query> queries = new ArrayList<>(lines.size());
+//		for (var line : lines) {
+//			queries.add(Query.fromInput(line));
+//		}
 		parseSw.recordAndReset();
 		return batchCountMatches(queries);
 	}
 
 	public long batchCountMatches(List<Query> queries) {
+		Stopwatch sw = new Stopwatch();
+		combineSw.reset();
 		long total = 0L;
 		for (var q : queries) {
-			long matches = countMatchesMeetInTheMiddle(q.record, q.groups);
+			sw.reset();
+			long matches = countVectorized(q.record, q.groups);
 			// prynt("{}: {} matches", q, matches);
+			sw.recordAndReset();
 			total += matches;
 		}
-		prynt("PARSE took {}ms", parseSw.totalRecordedMillis());
-		prynt("FORWARD took {}ms", forwardSw.totalRecordedMillis());
-		prynt("BACKWARD took {}ms", backwardSw.totalRecordedMillis());
-		prynt("COMBINE took {}ms", combineSw.totalRecordedMillis());
+		combineSw.recordAndReset();
 		return total;
 	}
 
@@ -98,6 +106,240 @@ class FiniteNondeterministicInputAutomataSolution extends ASolution {
 		forwardSw.recordAndReset();
 
 		return total;
+	}
+
+	public static long countVectorized(String record, List<Long> groups) {
+		initSw.reset();
+		Context context = new Context(record, groups.stream().mapToInt(l -> (int) (long) l).toArray());
+		initSw.recordAndReset();
+		forwardSw.reset();
+		Superposition superposition = Superposition.initial(context);
+		superposition.forward(0, record.length());
+		forwardSw.recordAndReset();
+		long ret = superposition.countAcceptedStates();
+		return ret;
+	}
+
+	public static long dummy() {
+		long i = 5;
+		if (forwardSw == null) {
+			i += 3;
+		}
+		i %= 6;
+		return i;
+	}
+
+	public static long countVectorizedMeetInTheMiddle(String record, List<Long> groups) {
+		Context context = new Context(record, groups.stream().mapToInt(l -> (int) (long) l).toArray());
+		int mid = record.length() / 2;
+		forwardSw.reset();
+		Superposition initial = Superposition.initial(context);
+		initial.forward(0, mid);
+		forwardSw.recordAndReset();
+		backwardSw.reset();
+		Superposition accepted = Superposition.accepted(context);
+		accepted.backward(mid, record.length());
+		backwardSw.recordAndReset();
+		combineSw.reset();
+		long total = 0L;
+		for (int state = initial.hbegin; state < initial.hend; state++) {
+			total += initial.histogram[state] * accepted.histogram[state];
+		}
+		combineSw.recordAndReset();
+		return total;
+	}
+
+	public static class Context {
+
+		public final String record;
+		public final int[] groupSize;
+
+		public final int[] stateToGroup;
+		public final int[] stateToHashCount;
+		public final boolean[] stateToDotExpected;
+
+		public Context(String record, int[] groups) {
+			this.record = record;
+			this.groupSize = groups;
+
+			int stateCount = Arrays.stream(groupSize) //
+				.map(x -> x + 1) //
+				.reduce(0, (x, y) -> x + y) + 2;
+			stateToGroup = new int[stateCount];
+			stateToHashCount = new int[stateCount];
+			stateToDotExpected = new boolean[stateCount];
+
+			int group = 0;
+			int hashCount = 0;
+			boolean dotExpected = true;
+			int state = 0;
+			while (group < groupSize.length || (group == groupSize.length && hashCount == 0)) {
+				stateToGroup[state] = group;
+				stateToHashCount[state] = hashCount;
+				stateToDotExpected[state] = dotExpected;
+
+				if (state + 1 == stateCount) {
+					state++;
+					break;
+				}
+
+				if (dotExpected) {
+					assert hashCount == 0;
+					dotExpected = false;
+				} else if (hashCount + 1 == groupSize[group]) {
+					group++;
+					hashCount = 0;
+					dotExpected = true;
+				} else {
+					hashCount++;
+				}
+
+				state++;
+			}
+			assert state == stateCount;
+		}
+
+	}
+
+	public static class Superposition {
+
+		public final Context context;
+		public long[] histogram;
+		public int hbegin;
+		public int hend;
+
+		public Superposition(Context context, long[] histogram, int hbegin, int hend) {
+			this.context = context;
+			this.histogram = histogram;
+			this.hbegin = hbegin;
+			this.hend = hend;
+		}
+
+		public static Superposition initial(Context context) {
+			long[] histogram = new long[context.stateToGroup.length];
+			histogram[1] = 1; // group 0, hash count 0, dot not expected
+			return new Superposition(context, histogram, 1, 2);
+		}
+
+		public static Superposition accepted(Context context) {
+			long[] histogram = new long[context.stateToGroup.length];
+			histogram[histogram.length - 2] = 1;
+			histogram[histogram.length - 1] = 1;
+			return new Superposition(context, histogram, histogram.length - 2, histogram.length);
+		}
+
+		public long countAcceptedStates() {
+			return histogram[histogram.length - 2] + histogram[histogram.length - 1];
+		}
+
+		public void forward(int rbegin, int rend) {
+			for (int i = rbegin; i < rend; i++) {
+				// Eliminate states that are too far behind to catch up
+				for (int state = hbegin; state < hend
+					&& state + (context.record.length() - i) < histogram.length - 2; state++) {
+					histogram[state] = 0L;
+				}
+
+				// update non-zero bounds
+				updateNonzeroBounds();
+
+				// process character
+				char c = context.record.charAt(i);
+				for (int state = hend - 1; state >= hbegin; state--) {
+					long multiplicity = histogram[state];
+					histogram[state] = 0L;
+					insertSuccessors(c, multiplicity, state);
+				}
+			}
+		}
+
+		public void backward(int rbegin, int rend) {
+			for (int i = rend - 1; i >= rbegin; i--) {
+				// Eliminate states that are too far behind to catch up
+				for (int state = hend - 1; state >= hbegin && state - (i + 1) > 0; state--) {
+					histogram[state] = 0L;
+				}
+
+				// update non-zero bounds
+				updateNonzeroBounds();
+
+				// process character
+				char c = context.record.charAt(i);
+				for (int state = hbegin; state < hend; state++) {
+					long multiplicity = histogram[state];
+					histogram[state] = 0L;
+					insertPredecessors(c, multiplicity, state);
+				}
+			}
+		}
+
+		private void updateNonzeroBounds() {
+			while (hbegin < histogram.length && histogram[hbegin] == 0L) {
+				hbegin++;
+			}
+			while (hend > 0L && histogram[hend - 1] == 0L) {
+				hend--;
+			}
+		}
+
+		private void insertSuccessors(char c, long multiplicity, int state) {
+			if (multiplicity == 0L) {
+				return;
+			}
+			switch (c) {
+			case '.':
+				if (context.stateToDotExpected[state]) {
+					histogram[state + 1] += multiplicity;
+					hend = Math.max(hend, state + 2);
+				} else if (context.stateToHashCount[state] == 0) {
+					histogram[state] += multiplicity;
+					hend = Math.max(hend, state + 1);
+				}
+				return;
+			case '#':
+				if (context.stateToDotExpected[state] || state + 1 == histogram.length) {
+					return;
+				}
+				histogram[state + 1] += multiplicity;
+				hend = Math.max(hend, state + 2);
+				return;
+			case '?':
+				insertSuccessors('.', multiplicity, state);
+				insertSuccessors('#', multiplicity, state);
+				return;
+			}
+			throw new RuntimeException();
+		}
+
+		private void insertPredecessors(char c, long multiplicity, int state) {
+			if (multiplicity == 0L) {
+				return;
+			}
+			switch (c) {
+			case '.':
+				if (context.stateToDotExpected[state] || context.stateToHashCount[state] > 0) {
+					return;
+				}
+				histogram[state - 1] += multiplicity;
+				histogram[state] += multiplicity;
+				hbegin = Math.min(hbegin, state - 1);
+				return;
+			case '#':
+				if (state == 0) {
+					return;
+				}
+				if (!context.stateToDotExpected[state] && context.stateToHashCount[state] == 0) {
+					return;
+				}
+				histogram[state - 1] += multiplicity;
+				hbegin = Math.min(hbegin, state - 1);
+				return;
+			case '?':
+				insertPredecessors('.', multiplicity, state);
+				insertPredecessors('#', multiplicity, state);
+				return;
+			}
+		}
 	}
 
 	public static Map<State, Long> matchNondeterministic(String record, List<Long> groups) {
@@ -252,12 +494,11 @@ class FiniteNondeterministicInputAutomataSolution extends ASolution {
 
 	public record Query(String record, List<Long> groups) {
 
-		public static IParser<Query> psr = regex("[#.?]*").thenSilently(" ")
-			.then(longNumber.star(",").map(Rope::toList)) //
-			.map(Pair.fn(Query::new));
-
 		public static Query fromInput(String line) {
-			return psr.parseOne(line);
+			String[] split = line.split(" ");
+			String[] numstrs = split[1].split(",");
+			List<Long> groups = Arrays.stream(numstrs).map(Long::parseLong).toList();
+			return new Query(split[0], groups);
 		}
 
 		public Query repeat(int n, String delimiter) {
