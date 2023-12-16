@@ -15,6 +15,10 @@ public class Stopwatch {
 		return statistics.stream().collect(summarizingLong(x -> x));
 	}
 
+	public long totalRecordedMillis() {
+		return statistics.stream().reduce(0L, (x, y) -> x + y);
+	}
+
 	public long recordAndReset() {
 		long elapsed = elapsedMillis();
 		statistics.add(elapsed);

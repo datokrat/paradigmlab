@@ -24,8 +24,20 @@ public class FiniteNondeterministicInputAutomataSolutionTest {
 	}
 
 	@Test
-	public void nondeterminism() {
-		assertThat(FiniteNondeterministicInputAutomataSolution.countMatches("??.??", List.of(1L, 1L)), is(4L));
+	public void testCases() {
+		testCase("??", List.of(1L), 2L);
+		testCase("??", List.of(2L), 1L);
+		testCase("??", List.of(), 1L);
+		testCase("??", List.of(1L, 1L), 0L);
+		testCase("??.??", List.of(1L, 1L), 4L);
+	}
+
+	private void testCase(String record, List<Long> groups, long expected) {
+		assertThat(FiniteNondeterministicInputAutomataSolution.matchNondeterministicBackwards(record, groups)
+			.getOrDefault(State.init(), 0L), is(expected));
+		assertThat(FiniteNondeterministicInputAutomataSolution.countMatches(record, groups), is(expected));
+		assertThat(FiniteNondeterministicInputAutomataSolution.countMatchesMeetInTheMiddle(record, groups),
+			is(expected));
 	}
 
 }

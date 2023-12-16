@@ -1,8 +1,8 @@
 package de.paulr.util;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
@@ -78,7 +78,7 @@ public abstract sealed class Rope<T> implements Iterable<T> permits EmptyRope, R
 	}
 
 	public Set<T> toSet() {
-		Set<T> result = new HashSet<T>();
+		Set<T> result = new LinkedHashSet<T>();
 		forEach(result::add);
 		return result;
 	}

@@ -9,13 +9,20 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import de.paulr.aoc2023.ASolution;
 import de.paulr.parser.IParser;
 import de.paulr.util.Pair;
 import de.paulr.util.Rope;
+import de.paulr.util.Stopwatch;
 
 class FiniteNondeterministicInputAutomataSolution extends ASolution {
+
+	public static Stopwatch forwardSw = new Stopwatch();
+	public static Stopwatch backwardSw = new Stopwatch();
+	public static Stopwatch combineSw = new Stopwatch();
+	public static Stopwatch parseSw = new Stopwatch();
 
 	public FiniteNondeterministicInputAutomataSolution() {
 		super(2023, 12, "");
@@ -23,7 +30,9 @@ class FiniteNondeterministicInputAutomataSolution extends ASolution {
 
 	public static void main(String[] args) {
 		var s = new FiniteNondeterministicInputAutomataSolution();
+		Stopwatch sw = new Stopwatch();
 		prynt(s.partB());
+		prynt("Part B took {}ms", sw.elapsedMillis());
 	}
 
 	@Override
@@ -33,20 +42,49 @@ class FiniteNondeterministicInputAutomataSolution extends ASolution {
 
 	@Override
 	public Object partB() {
-		return batchCountMatches(lines.stream().map(Query::fromInput).map(q -> q.repeat(5, "?")).toList());
+		parseSw.reset();
+		var queries = lines.stream().map(Query::fromInput).map(q -> q.repeat(5, "?")).toList();
+		parseSw.recordAndReset();
+		return batchCountMatches(queries);
 	}
 
-	public static long batchCountMatches(List<Query> queries) {
+	public long batchCountMatches(List<Query> queries) {
 		long total = 0L;
 		for (var q : queries) {
-			long matches = countMatches(q.record, q.groups);
+			long matches = countMatchesMeetInTheMiddle(q.record, q.groups);
 			// prynt("{}: {} matches", q, matches);
 			total += matches;
 		}
+		prynt("PARSE took {}ms", parseSw.totalRecordedMillis());
+		prynt("FORWARD took {}ms", forwardSw.totalRecordedMillis());
+		prynt("BACKWARD took {}ms", backwardSw.totalRecordedMillis());
+		prynt("COMBINE took {}ms", combineSw.totalRecordedMillis());
+		return total;
+	}
+
+	public static long countMatchesMeetInTheMiddle(String record, List<Long> groups) {
+		int mid = record.length() / 2;
+
+		forwardSw.reset();
+		var superpositionForward = matchNondeterministic(record, 0, mid, groups);
+		forwardSw.recordAndReset();
+		backwardSw.reset();
+		var superpositionBackward = matchNondeterministicBackwards(record, mid, record.length(), groups);
+		backwardSw.recordAndReset();
+
+		combineSw.reset();
+		long total = 0L;
+		for (var state : superpositionForward.keySet()) {
+			long forwardMultiplicity = superpositionForward.getOrDefault(state, 0L);
+			long backwardMultiplicity = superpositionBackward.getOrDefault(state, 0L);
+			total += forwardMultiplicity * backwardMultiplicity;
+		}
+		combineSw.recordAndReset();
 		return total;
 	}
 
 	public static long countMatches(String record, List<Long> groups) {
+		forwardSw.reset();
 		var superposition = matchNondeterministic(record, groups);
 
 		long total = 0L;
@@ -57,18 +95,44 @@ class FiniteNondeterministicInputAutomataSolution extends ASolution {
 				total += multiplicity;
 			}
 		}
+		forwardSw.recordAndReset();
 
 		return total;
 	}
 
 	public static Map<State, Long> matchNondeterministic(String record, List<Long> groups) {
+		return matchNondeterministic(record, 0, record.length(), groups);
+	}
+
+	public static Map<State, Long> matchNondeterministic(String record, int begin, int end, List<Long> groups) {
 		Map<State, Long> superposition = Map.of(State.init(), 1L);
-		for (int i = 0; i < record.length(); i++) {
+		for (int i = begin; i < end; i++) {
 			Map<State, Long> nextSuperposition = new LinkedHashMap<>();
 			for (var entry : superposition.entrySet()) {
 				State state = entry.getKey();
 				long multiplicity = entry.getValue();
 				state.consumeNondeterministic(record.charAt(i), multiplicity, groups, nextSuperposition);
+			}
+			superposition = nextSuperposition;
+		}
+		return superposition;
+	}
+
+	public static Map<State, Long> matchNondeterministicBackwards(String record, List<Long> groups) {
+		return matchNondeterministicBackwards(record, 0, record.length(), groups);
+	}
+
+	public static Map<State, Long> matchNondeterministicBackwards(String record, int begin, int end,
+		List<Long> groups) {
+		Map<State, Long> superposition = Map.of( //
+			new State(groups.size(), 0, Expectation.DOT), 1L, //
+			new State(groups.size(), 0, Expectation.MIXED), 1L);
+		for (int i = end - 1; i >= begin; i--) {
+			Map<State, Long> nextSuperposition = new LinkedHashMap<>();
+			for (var entry : superposition.entrySet()) {
+				State state = entry.getKey();
+				long multiplicity = entry.getValue();
+				state.deconsumeNondeterministic(record.charAt(i), multiplicity, groups, nextSuperposition);
 			}
 			superposition = nextSuperposition;
 		}
@@ -95,6 +159,15 @@ class FiniteNondeterministicInputAutomataSolution extends ASolution {
 				consumeNondeterministic('#', multiplicity, groups, output);
 			} else {
 				consume(c, groups).ifPresent(next -> output.put(next, output.getOrDefault(next, 0L) + multiplicity));
+			}
+		}
+
+		public void deconsumeNondeterministic(char c, long multiplicity, List<Long> groups, Map<State, Long> output) {
+			if (c == '?') {
+				deconsumeNondeterministic('.', multiplicity, groups, output);
+				deconsumeNondeterministic('#', multiplicity, groups, output);
+			} else {
+				deconsume(c, groups).stream().forEach(s -> output.put(s, output.getOrDefault(s, 0L) + multiplicity));
 			}
 		}
 
@@ -136,6 +209,37 @@ class FiniteNondeterministicInputAutomataSolution extends ASolution {
 					}
 					return Optional.of(new State(group, hashCount + 1, Expectation.MIXED));
 				}
+			}
+			throw new RuntimeException();
+		}
+
+		public List<State> deconsume(char c, List<Long> groups) {
+			switch (c) {
+			case '.':
+				switch (expectation) {
+				case DOT:
+					return List.of();
+				case MIXED:
+					if (hashCount == 0) {
+						return List.of(this, new State(group, 0, Expectation.DOT));
+					} else {
+						return List.of();
+					}
+				}
+			case '#':
+				switch (expectation) {
+				case DOT:
+					if (group == 0)
+						return List.of();
+					int ngroup = group - 1;
+					return List.of(new State(ngroup, (int) (long) groups.get(ngroup) - 1, Expectation.MIXED));
+				case MIXED:
+					if (hashCount == 0)
+						return List.of();
+					return List.of(new State(group, hashCount - 1, Expectation.MIXED));
+				}
+			case '?':
+				return Stream.concat(deconsume('.', groups).stream(), deconsume('#', groups).stream()).toList();
 			}
 			throw new RuntimeException();
 		}
