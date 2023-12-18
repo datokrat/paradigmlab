@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public final class CollectionUtils {
@@ -59,6 +61,10 @@ public final class CollectionUtils {
 		List<T> list = new ArrayList<>();
 		generator.accept(list::add);
 		return list;
+	}
+
+	public static <K1, K2, V> Map<K2, V> mapKeys(Map<K1, V> map, Function<K1, K2> fn) {
+		return map.entrySet().stream().collect(Collectors.toMap(e -> fn.apply(e.getKey()), e -> e.getValue()));
 	}
 
 	@FunctionalInterface
