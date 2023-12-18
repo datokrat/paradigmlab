@@ -180,6 +180,15 @@ public class AoCUtil {
 		public boolean isHorizontal() {
 			return !isVertical();
 		}
+
+		public Direction reverse() {
+			return switch (this) {
+			case UP -> Direction.DOWN;
+			case DOWN -> Direction.UP;
+			case LEFT -> Direction.RIGHT;
+			case RIGHT -> Direction.LEFT;
+			};
+		}
 	}
 
 	public static List<Pos> rowPositions(List<String> lines, long y) {
