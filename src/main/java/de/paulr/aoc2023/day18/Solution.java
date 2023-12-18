@@ -17,6 +17,8 @@ import java.util.stream.Stream;
 import de.paulr.aoc2023.ASolution;
 import de.paulr.aoc2023.AoCUtil.Direction;
 import de.paulr.aoc2023.AoCUtil.Pos;
+import de.paulr.aoc2023.PipeEater;
+import de.paulr.aoc2023.PipeEater.PipePart;
 import de.paulr.util.Pair;
 
 class Solution extends ASolution {
@@ -33,13 +35,12 @@ class Solution extends ASolution {
 	Map<Pos, Direction> nextDirection = new HashMap<>();
 	Map<Pos, Direction> prevDirection = new HashMap<>();
 
+	List<Pos> eventList = new ArrayList<>();
 	List<Pair<Long, List<Long>>> events = new ArrayList<>();
 	SortedSet<Long> verticalPipes = new TreeSet<>();
 
 	public Object partA() {
 		Pos pos = Pos.of(0, 0);
-		List<Pos> ev = new ArrayList<>();
-
 		for (var line : lines) {
 			String[] split = line.split(" ");
 			Direction dir = switch (split[0]) {
@@ -51,23 +52,10 @@ class Solution extends ASolution {
 			};
 			int streak = Integer.parseInt(split[1]);
 
-			ev.add(pos);
+			eventList.add(pos);
 			nextDirection.put(pos, dir);
 			pos = pos.move(dir, streak);
 			prevDirection.put(pos, dir);
-		}
-
-		ev.sort(Comparator.comparing(Pos::y).thenComparing(Pos::x));
-
-		for (int i = 0; i < ev.size(); i++) {
-			List<Long> xs;
-			if (events.size() == 0 || events.get(events.size() - 1).first() < ev.get(i).y()) {
-				xs = new ArrayList<>();
-				events.add(Pair.of(ev.get(i).y(), xs));
-			} else {
-				xs = events.get(events.size() - 1).second();
-			}
-			xs.add(ev.get(i).x());
 		}
 
 		return countInnerAndPipes();
@@ -77,8 +65,6 @@ class Solution extends ASolution {
 	public Object partB() {
 
 		Pos pos = Pos.of(0, 0);
-		List<Pos> ev = new ArrayList<>();
-
 		for (var line : lines) {
 			String[] split = line.split(" ");
 			String code = split[2];
@@ -91,31 +77,32 @@ class Solution extends ASolution {
 			};
 			int streak = Integer.parseInt(code.substring(2, 7), 16);
 
-			ev.add(pos);
+			eventList.add(pos);
 			nextDirection.put(pos, dir);
 			pos = pos.move(dir, streak);
 			prevDirection.put(pos, dir);
-		}
-
-		ev.sort(Comparator.comparing(Pos::y).thenComparing(Pos::x));
-
-		for (int i = 0; i < ev.size(); i++) {
-			List<Long> xs;
-			if (events.size() == 0 || events.get(events.size() - 1).first() < ev.get(i).y()) {
-				xs = new ArrayList<>();
-				events.add(Pair.of(ev.get(i).y(), xs));
-			} else {
-				xs = events.get(events.size() - 1).second();
-			}
-			xs.add(ev.get(i).x());
 		}
 
 		return countInnerAndPipes();
 	}
 
 	private long countInnerAndPipes() {
+		eventList.sort(Comparator.comparing(Pos::y).thenComparing(Pos::x));
+
+		for (int i = 0; i < eventList.size(); i++) {
+			List<Long> xs;
+			if (events.size() == 0 || events.get(events.size() - 1).first() < eventList.get(i).y()) {
+				xs = new ArrayList<>();
+				events.add(Pair.of(eventList.get(i).y(), xs));
+			} else {
+				xs = events.get(events.size() - 1).second();
+			}
+			xs.add(eventList.get(i).x());
+		}
+
 		long count = 0L;
 		long lastY = 0;
+		PipeEater eater = new PipeEater();
 		for (int i = 0; i < events.size(); i++) {
 			var line = events.get(i);
 			long y = line.first();
@@ -134,27 +121,28 @@ class Solution extends ASolution {
 			xs = Stream.of(verticalPipes.stream(), line.second().stream()).flatMap(x -> x).sorted().distinct()
 				.collect(Collectors.toCollection(ArrayList::new));
 
-			PipeState state = new TerminalPipeState(false);
+			eater.reset();
 			SortedSet<Long> nextVerticalPipes = new TreeSet<>();
 
 			for (int j = 0; j < xs.size(); j++) {
 				long x = xs.get(j);
 				long gap = j == 0 ? 0L : (x - xs.get(j - 1) - 1);
-				char pipe = getPipeAt(Pos.of(x, y));
-				if (pipe == '.' && verticalPipes.contains(x)) {
-					pipe = '|';
+				PipePart pipe = getPipeAt(Pos.of(x, y));
+
+				if (pipe == PipePart.NONE) {
+					pipe = PipePart.VERTICAL; // pipe comes from verticalPipes
 				}
-				if (Set.of('|', '7', 'F').contains(pipe)) {
+
+				if (pipe.getEnds().contains(Direction.DOWN)) {
 					nextVerticalPipes.add(x);
 				}
-				if (state.pipeExpected()) {
-					count += gap + 1;
-				} else if (state.innerTileExpected()) {
+
+				eater.next(pipe);
+				if (eater.lastIsInner() || eater.lastIsPipe()) {
 					count += gap + 1;
 				} else {
 					count += 1;
 				}
-				state = state.next(pipe, true);
 			}
 
 			verticalPipes = nextVerticalPipes;
@@ -163,114 +151,13 @@ class Solution extends ASolution {
 		return count;
 	}
 
-	private char getPipeAt(Pos pos) {
+	private PipePart getPipeAt(Pos pos) {
 		Direction pdir = Optional.ofNullable(prevDirection.get(pos)).map(Direction::reverse).orElse(null);
 		Direction ndir = nextDirection.get(pos);
 		if (pdir == null) {
-			return '.';
+			return PipePart.NONE;
 		}
-		if (pdir.isVertical() && ndir.isVertical()) {
-			return '|';
-		}
-		if (pdir.isHorizontal() && ndir.isHorizontal()) {
-			return '-';
-		}
-		var set = Set.of(pdir, ndir);
-		if (set.equals(Set.of(Direction.LEFT, Direction.UP))) {
-			return 'J';
-		}
-		if (set.equals(Set.of(Direction.RIGHT, Direction.UP))) {
-			return 'L';
-		}
-		if (set.equals(Set.of(Direction.LEFT, Direction.DOWN))) {
-			return '7';
-		}
-		if (set.equals(Set.of(Direction.RIGHT, Direction.DOWN))) {
-			return 'F';
-		}
-		throw new RuntimeException();
-	}
-
-	public enum State {
-		INNER, OUTER, ON
-	}
-
-	public abstract sealed class PipeState permits TerminalPipeState, HorizontalPipeState {
-
-		public abstract boolean innerTileExpected();
-
-		public abstract boolean pipeExpected();
-
-		public abstract PipeState next(char c, boolean partOfCycle);
-
-	}
-
-	public final class TerminalPipeState extends PipeState {
-
-		private boolean rightIsInner;
-
-		public TerminalPipeState(boolean rightIsInner) {
-			this.rightIsInner = rightIsInner;
-		}
-
-		@Override
-		public boolean innerTileExpected() {
-			return rightIsInner;
-		}
-
-		@Override
-		public PipeState next(char c, boolean partOfCycle) {
-			if (!partOfCycle) {
-				c = '.';
-			}
-			return switch (c) {
-			case 'F' -> new HorizontalPipeState(rightIsInner);
-			case 'L' -> new HorizontalPipeState(!rightIsInner);
-			case '|' -> new TerminalPipeState(!rightIsInner);
-			case '-', 'J', '7' -> throw new RuntimeException();
-			default -> new TerminalPipeState(rightIsInner);
-			};
-		}
-
-		@Override
-		public boolean pipeExpected() {
-			return false;
-		}
-
-	}
-
-	public final class HorizontalPipeState extends PipeState {
-
-		private boolean upIsInner;
-
-		public HorizontalPipeState(boolean upIsInner) {
-			this.upIsInner = upIsInner;
-		}
-
-		@Override
-		public boolean innerTileExpected() {
-			return false;
-		}
-
-		@Override
-		public PipeState next(char c, boolean partOfCycle) {
-			if (!partOfCycle) {
-				c = '.';
-			}
-			return switch (c) {
-			case '-' -> this;
-			case 'J' -> new TerminalPipeState(!upIsInner);
-			case '7' -> new TerminalPipeState(upIsInner);
-			case 'F', 'L', '|' -> throw new RuntimeException();
-			default -> throw new RuntimeException();
-			};
-		}
-
-		@Override
-		public boolean pipeExpected() {
-			return true;
-		}
-
+		return PipePart.ofEnds(Set.of(pdir, ndir));
 	}
 
 }
