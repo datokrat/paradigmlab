@@ -11,6 +11,13 @@ import java.util.stream.Stream;
 
 public final class CollectionUtils {
 
+	public static Stream<Long> rangeIncludingEnds(long end1, long end2) {
+		if (end1 > end2) {
+			return rangeIncludingEnds(end2, end1);
+		}
+		return rangeBetween(end1, end2 + 1);
+	}
+
 	public static Stream<Integer> rangeBetween(int begin, int end) {
 		return Stream.iterate(begin, i -> i < end, i -> i + 1);
 	}

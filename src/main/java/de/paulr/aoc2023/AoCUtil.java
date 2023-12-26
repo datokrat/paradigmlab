@@ -8,11 +8,15 @@ import static java.util.stream.Collectors.toMap;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.helpers.MessageFormatter;
 
 import de.paulr.parser.IParser;
@@ -84,6 +88,25 @@ public class AoCUtil {
 			return new Pos(x, y);
 		}
 
+		public long manhattanDist(Pos other) {
+			return Math.abs(x - other.x) + Math.abs(y - other.y);
+		}
+
+		public long alignedDist(Pos other) {
+			if (x != other.x && y != other.y) {
+				throw new IllegalArgumentException("points must be horizontally or vertically aligned");
+			}
+			return manhattanDist(other);
+		}
+
+		public long cross(Pos other) {
+			return x * other.y - y * other.x;
+		}
+
+		public Pos rotate(Rotation rotation) {
+			return rotate(Direction.UP, rotation.rotateUPto());
+		}
+
 		public Pos rotateLeft() {
 			return Pos.of(-y, x);
 		}
@@ -133,8 +156,49 @@ public class AoCUtil {
 
 	}
 
+	public enum Rotation {
+		ID, LEFT, RIGHT, REVERSE;
+
+		public Direction rotateUPto() {
+			return switch (this) {
+			case ID -> Direction.UP;
+			case LEFT -> Direction.LEFT;
+			case RIGHT -> Direction.RIGHT;
+			case REVERSE -> Direction.DOWN;
+			};
+		}
+
+		public Rotation inverse() {
+			return switch (this) {
+			case ID -> ID;
+			case REVERSE -> REVERSE;
+			case LEFT -> RIGHT;
+			case RIGHT -> LEFT;
+			};
+		}
+
+		public static Rotation UPto(Direction rotateUPto) {
+			return switch (rotateUPto) {
+			case UP -> Rotation.ID;
+			case LEFT -> Rotation.LEFT;
+			case RIGHT -> Rotation.RIGHT;
+			case DOWN -> Rotation.REVERSE;
+			};
+		}
+	}
+
 	public enum Direction {
 		LEFT, UP, RIGHT, DOWN;
+
+		public static Direction ofChar(char c) {
+			return switch (c) {
+			case '<' -> Direction.LEFT;
+			case '>' -> Direction.RIGHT;
+			case '^' -> Direction.UP;
+			case 'v' -> Direction.DOWN;
+			default -> null;
+			};
+		}
 
 		public Direction rotateRight() {
 			switch (this) {
@@ -262,7 +326,23 @@ public class AoCUtil {
 			this.defaultValue = defaultValue;
 		}
 
+		public Set<Pos> getPositions() {
+			return matrix.keySet();
+		}
+
 		public T get(int x, int y) {
+			return get(Pos.of(x, y));
+		}
+
+		public T getMod(Pos pos) {
+			long x = pos.x() % width;
+			if (x < 0) {
+				x += width;
+			}
+			long y = pos.y() % height;
+			if (y < 0) {
+				y += height;
+			}
 			return get(Pos.of(x, y));
 		}
 
@@ -271,7 +351,16 @@ public class AoCUtil {
 				throw new RuntimeException();
 			}
 
-			return matrix.getOrDefault(pos.rotate(rotateUPto, Direction.UP), defaultValue);
+			return matrix.getOrDefault(rotateInMatrix(pos, Rotation.UPto(rotateUPto)), defaultValue);
+		}
+
+		public Pos rotateInMatrix(Pos pos, Rotation rotation) {
+			return switch (rotation) {
+			case ID -> pos;
+			case REVERSE -> Pos.of(width - 1 - pos.x, height - 1 - pos.y);
+			case LEFT -> Pos.of(pos.y, width - 1 - pos.x);
+			case RIGHT -> Pos.of(height - 1 - pos.y, pos.x);
+			};
 		}
 
 		public boolean containsKey(Pos pos) {
@@ -306,6 +395,88 @@ public class AoCUtil {
 			return Pos.of(width - 1, height - 1);
 		}
 
+		public Set<Pos> boundary() {
+			Set<Pos> boundary = new HashSet<>();
+			for (int x = 0; x < width; x++) {
+				boundary.add(Pos.of(x, 0L));
+				boundary.add(Pos.of(x, height - 1));
+			}
+			for (int y = 0; y < height; y++) {
+				boundary.add(Pos.of(0L, y));
+				boundary.add(Pos.of(width - 1, y));
+			}
+			return boundary;
+		}
+
+	}
+
+	public static long lcm(long a, long b, long c, long d) {
+		return lcm(lcm(a, b, c), d);
+	}
+
+	public static long lcm(long a, long b, long c) {
+		return lcm(lcm(a, b), c);
+	}
+
+	public static long lcm(long a, long b) {
+		long gcd = BigInteger.valueOf(a).gcd(BigInteger.valueOf(b)).longValue();
+		return (a / gcd) * b;
+	}
+
+	// === Geometry ===
+
+	/**
+	 * Inspired by
+	 * https://github.com/Torben2000/adventofcode-java/commit/a9a6dac9ea1aa5ff464726a54adc56fb5206b607
+	 * and https://en.wikipedia.org/wiki/Green's_theorem#Area_Calculation
+	 * 
+	 * See also
+	 * https://stackoverflow.com/questions/451426/how-do-i-calculate-the-area-of-a-2d-polygon
+	 * 
+	 * Assumes that the edges are axis-aligned and that the thick paths do not
+	 * overlap
+	 */
+	public static long polygonSizeFatLines(List<Pos> path, long thickness, boolean includeBorder) {
+		long area = polygonSizeThinLinesAligned(path);
+
+		if (includeBorder) {
+			// For every left or upper edge, add this edge with `thickness`
+			// For every top-left corner, add this corner with `thickness^2`
+			// Similarly, remove `thickness^2` for every corner pointing inward towards
+			// bottom-right
+			// There is one more corner of the former kind
+			area += thickness * polygonCircumferenceThinLinesAligned(path) / 2 + thickness * thickness;
+		} else {
+			// Not sure whether we need to add/subtract a correction....
+			// I think we also need a special handling for the empty polygon?
+			throw new NotImplementedException();
+			// area -= thickness * polygonCircumferenceThinLinesAligned(path) / 2;
+		}
+
+		return area;
+	}
+
+	public static long polygonSizeThinLinesAligned(List<Pos> path) {
+		long doubleArea = 0L;
+		for (int i = 0; i < path.size(); i++) {
+			Pos p = path.get(i);
+			Pos q = path.get((i + 1) % path.size());
+			doubleArea += p.cross(q);
+		}
+		return Math.abs(doubleArea) / 2;
+	}
+
+	/**
+	 * is always even
+	 */
+	public static long polygonCircumferenceThinLinesAligned(List<Pos> path) {
+		long circumference = 0L;
+		for (int i = 0; i < path.size(); i++) {
+			Pos p = path.get(i);
+			Pos q = path.get((i + 1) % path.size());
+			circumference += p.alignedDist(q);
+		}
+		return circumference;
 	}
 
 }

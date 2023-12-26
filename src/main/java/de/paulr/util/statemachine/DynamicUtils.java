@@ -15,15 +15,21 @@ public class DynamicUtils {
 	}
 
 	public static <S> S iterateSmart(S state, long iterations, UnaryOperator<S> op) {
-		S c = transToCyclicState(state, op);
-		long itToCycle = countStepsBetween(state, c, op);
-		long itInCycle = countRoundtripSteps(c, op);
-		long it = iterations > itToCycle ? ((iterations - itToCycle) % itInCycle) + itToCycle : iterations;
+		CycleInfo<S> info = detectCycle(state, op);
+		long it = iterations > info.edenSteps ? ((iterations - info.edenSteps) % info.cycleSteps) + info.edenSteps
+			: iterations;
 		S s = state;
 		for (long i = 0; i < it; i++) {
 			s = op.apply(s);
 		}
 		return s;
+	}
+
+	public static <S> CycleInfo<S> detectCycle(S state, UnaryOperator<S> op) {
+		S cycle = transToCyclicState(state, op);
+		long edenSteps = countStepsBetween(state, cycle, op);
+		long cycleSteps = countRoundtripSteps(cycle, op);
+		return new CycleInfo<S>(cycle, edenSteps, cycleSteps);
 	}
 
 	public static <S> S transToCyclicState(S state, UnaryOperator<S> transition) {
@@ -53,6 +59,9 @@ public class DynamicUtils {
 
 	public static <S> long countRoundtripSteps(S start, UnaryOperator<S> transition) {
 		return countStepsBetween(transition.apply(start), start, transition) + 1;
+	}
+
+	public record CycleInfo<S>(S cycleEntry, long edenSteps, long cycleSteps) {
 	}
 
 }
