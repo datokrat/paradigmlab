@@ -423,6 +423,10 @@ public class AoCUtil {
 		return (a / gcd) * b;
 	}
 
+	public static BigInteger lcm(BigInteger a, BigInteger b) {
+		return a.divide(a.gcd(b)).multiply(b);
+	}
+
 	// === Geometry ===
 
 	/**

@@ -15,7 +15,7 @@ import de.paulr.util.Rope;
 
 class Solution extends ASolution {
 
-	public IParser<Pos3d> posPsr = longNumber.plus(regex(",\\s*")).map(Rope.fn(Pos3d::new));
+	public IParser<Pos3d> posPsr = longNumber.map(BigInteger::valueOf).plus(regex(",\\s*")).map(Rope.fn(Pos3d::new));
 	public IParser<Pair<Pos3d, Pos3d>> phasePsr = posPsr.thenSilently(regex("\\s*@\\s*")).then(posPsr);
 	public List<Pair<Pos3d, Pos3d>> phases;
 
@@ -26,7 +26,7 @@ class Solution extends ASolution {
 //	public static long MAX = 27L;
 
 	public Solution() {
-		super(2023, 24, "");
+		super(2023, 24, "s");
 	}
 
 	public static void main(String[] args) {
@@ -48,9 +48,7 @@ class Solution extends ASolution {
 		return count;
 	}
 
-	public Object partB() {
-		parseInput();
-
+	public MatrixInversionTableau createTableau() {
 		IntegralMatrix a = new IntegralMatrix(4, 3);
 		a.set(3, 0, BigInteger.ONE);
 		a.set(3, 1, BigInteger.ONE);
@@ -66,21 +64,31 @@ class Solution extends ASolution {
 			b.set(i, i, BigInteger.ONE);
 		}
 		MatrixInversionTableau tableau = new MatrixInversionTableau(a, b);
-		tableau.eliminate(0, 1, 0);
-		tableau.eliminate(0, 2, 0);
-		tableau.eliminate(0, 3, 0);
-		tableau.eliminate(1, 2, 1);
-		tableau.eliminate(1, 3, 1);
+		tableau.gauss();
+		return tableau;
+	}
 
-		tableau.eliminate(3, 0, 2);
-		tableau.eliminate(3, 1, 2);
-		tableau.eliminate(3, 2, 2);
+	public Object partB() {
+		parseInput();
+		MatrixInversionTableau tableau = createTableau();
+//		tableau.eliminate(0, 1, 0);
+//		tableau.eliminate(0, 2, 0);
+//		tableau.eliminate(0, 3, 0);
+//		tableau.eliminate(1, 2, 1);
+//		tableau.eliminate(1, 3, 1);
+//
+//		tableau.eliminate(3, 0, 2);
+//		tableau.eliminate(3, 1, 2);
+//		tableau.eliminate(3, 2, 2);
+//
+//		tableau.eliminate(1, 0, 1);
 
-		tableau.eliminate(1, 0, 1);
-
-		for (long tc = 0; tc < 1000L; tc++) {
+		for (long tc = 0; tc < 1000_000_000L; tc++) {
 			if (check(phases.get(0), phases.get(1), phases.get(3), tc, tableau)) {
 				prynt(tc);
+			}
+			if (tc % 1_000_000_0L == 999_999_9L) {
+				prynt("tc {}", tc);
 			}
 		}
 		return "Nothing found";
@@ -90,19 +98,20 @@ class Solution extends ASolution {
 		Pos4d result = new Pos4d(0, 0, 0, 0);
 		for (int i = 0; i < 4; i++) {
 			for (int j = 0; j < 4; j++) {
-				// result.set(i, result.get(i) + )
+				BigInteger toAdd = tableau.right.get(i, j).multiply(z.get(j));
+				result = result.set(i, result.get(i).add(toAdd));
 			}
 		}
-		return null;
+		return result;
 	}
 
-	public Pos4d invertForSample(Pos4d z) {
-		long c1 = -2 * (z.y + 6 * z.x + 7 * z.t);
-		long c1alt = z.z - 8 * z.x - 6 * z.t;
-		long c2 = 8 * z.x - z.z + 14 * z.t;
-		long c3 = 2 * z.t + z.z;
-		return new Pos4d(c1, c1alt, c2, c3);
-	}
+//	public Pos4d invertForSample(Pos4d z) {
+//		long c1 = -2 * (z.y + 6 * z.x + 7 * z.t);
+//		long c1alt = z.z - 8 * z.x - 6 * z.t;
+//		long c2 = 8 * z.x - z.z + 14 * z.t;
+//		long c3 = 2 * z.t + z.z;
+//		return new Pos4d(c1, c1alt, c2, c3);
+//	}
 
 	public boolean check(Pair<Pos3d, Pos3d> a, Pair<Pos3d, Pos3d> b, Pair<Pos3d, Pos3d> c, long tc,
 		MatrixInversionTableau tableau) {
@@ -113,40 +122,52 @@ class Solution extends ASolution {
 		// Find the coefficients for w1 and w2; if a collision happens, they should be
 		// whole, I hope
 		// prynt("{}, {}, {}", w1, w2, w3);
-
 		// I inverted the matrix manually...
-		Pos4d inverse = invertForSample(z);
-		long c1 = inverse.x;
-		long c1alt = inverse.y;
-		long c2 = inverse.z;
-		long c3 = inverse.t;
 //		long c1 = -2 * (z.y + 6 * z.x + 7 * z.t);
 //		long c1alt = z.z - 8 * z.x - 6 * z.t;
 //		long c2 = 8 * z.x - z.z + 14 * z.t;
 //		long c3 = -4 * z.x + 2 * z.y - 2 * z.t;
 
-		if (c1 != c1alt) {
+		Pos4d inverse = invertWithTableau(tableau, z);
+		BigInteger c1 = inverse.x;
+		BigInteger c2 = inverse.y;
+		BigInteger c3 = inverse.z;
+		BigInteger check = inverse.t;
+
+		if (!check.equals(BigInteger.ZERO)) {
 			return false;
 		}
-		assert z.times(8).equals(w1.times(c1).plus(w2.times(c2)).plus(w3.times(c3)));
+
+		BigInteger denominator = tableau.left.get(0, 0);
+		assert tableau.left.get(0, 0).equals(tableau.left.get(1, 1));
+		assert tableau.left.get(0, 1).equals(BigInteger.ZERO);
+		assert z.times(denominator).equals(w1.times(c1).plus(w2.times(c2)).plus(w3.times(c3)));
+
 //		if (c3 % 8 != 0) {
 //			return false;
 //		}
-		if (c2 % c3 != 0) {
-			return false;
-		}
-		if (c1 % (8 + c3) != 0) {
+
+		// only accept integral collision times
+		BigInteger numerator2 = c2;
+		BigInteger denominator2 = c3;
+		if (!numerator2.remainder(denominator2).equals(BigInteger.ZERO)) {
 			return false;
 		}
 
-		long t1 = c1 / (8 + c3);
-		long t2 = -c2 / c3;
+		BigInteger numerator1 = c1;
+		BigInteger denominator1 = denominator.add(c3);
+		if (!numerator1.remainder(denominator1).equals(BigInteger.ZERO)) {
+			return false;
+		}
+
+		BigInteger t1 = numerator1.divide(denominator1);
+		BigInteger t2 = numerator2.divide(denominator2).negate();
 		Pos3d p1 = a.first().add(a.second().times(t1));
 		Pos3d p2 = b.first().add(b.second().times(t2));
-		Pos3d velocity = p1.minus(p2).dividedBy(t1 - t2);
+		Pos3d velocity = p1.minus(p2).dividedBy(t1.subtract(t2));
 		Pos3d start = p1.minus(velocity.times(t1));
 
-		assert p1.minus(p2).equals(velocity.times(t1 - t2));
+		assert p1.minus(p2).equals(velocity.times(t1.subtract(t2)));
 
 		for (int i = 0; i < phases.size(); i++) {
 			if (!isCollision(Pair.of(start, velocity), phases.get(i))) {
@@ -161,22 +182,22 @@ class Solution extends ASolution {
 		Pos3d dstart = b.first().minus(a.first());
 		Pos3d dvelocity = b.second().minus(a.second());
 
-		long t;
-		if (dvelocity.x != 0) {
-			t = -dstart.x / dvelocity.x;
-		} else if (dvelocity.y != 0) {
-			t = -dstart.y / dvelocity.y;
-		} else if (dvelocity.z != 0) {
-			t = -dstart.z / dvelocity.z;
+		BigInteger t;
+		if (!dvelocity.x.equals(BigInteger.ZERO)) {
+			t = dstart.x.divide(dvelocity.x).negate();
+		} else if (!dvelocity.y.equals(BigInteger.ZERO)) {
+			t = dstart.y.divide(dvelocity.y).negate();
+		} else if (!dvelocity.z.equals(BigInteger.ZERO)) {
+			t = dstart.z.divide(dvelocity.z).negate();
 		} else {
 			throw new RuntimeException();
 		}
 
-		if (t < 0) {
+		if (t.compareTo(BigInteger.ZERO) < 0) {
 			return false;
 		}
 
-		return dvelocity.times(-t).equals(dstart);
+		return dvelocity.times(t.negate()).equals(dstart);
 	}
 
 	public boolean doLinesIntersectA(Pair<Pos3d, Pos3d> a, Pair<Pos3d, Pos3d> b) {
@@ -216,10 +237,12 @@ class Solution extends ASolution {
 	}
 
 	public boolean isIntersectionFuture(Pair<Pos3d, Pos3d> phase, BigFractional x, BigFractional y) {
-		if (phase.second().x != 0) {
-			return x.numberEquals(phase.first().x) || ((phase.second().x > 0) == (x.compareTo(phase.first().x) > 0));
-		} else if (phase.second().y != 0) {
-			return y.numberEquals(phase.first().y) || ((phase.second().y > 0) == (y.compareTo(phase.first().y) > 0));
+		if (!phase.second().x.equals(BigInteger.ZERO)) {
+			return x.numberEquals(phase.first().x)
+				|| ((phase.second().x.compareTo(BigInteger.ZERO) > 0) == (x.compareTo(phase.first().x) > 0));
+		} else if (!phase.second().y.equals(BigInteger.ZERO)) {
+			return y.numberEquals(phase.first().y)
+				|| ((phase.second().x.compareTo(BigInteger.ZERO) > 0) == (y.compareTo(phase.first().y) > 0));
 		} else {
 			throw new IllegalStateException();
 		}
@@ -230,7 +253,7 @@ class Solution extends ASolution {
 	}
 
 	public BigPos3d xyToBigPos(Pos3d pos) {
-		return new BigPos3d(BigInteger.valueOf(pos.x), BigInteger.valueOf(pos.y), BigInteger.ONE);
+		return new BigPos3d(pos.x, pos.y, BigInteger.ONE);
 	}
 
 	public void parseInput() {
@@ -243,10 +266,14 @@ class Solution extends ASolution {
 	public record BigFractional(BigInteger n, BigInteger d) {
 
 		public static BigFractional of(long x) {
-			return new BigFractional(BigInteger.valueOf(x), BigInteger.ONE);
+			return of(BigInteger.valueOf(x));
 		}
 
-		public int compareTo(long other) {
+		public static BigFractional of(BigInteger x) {
+			return new BigFractional(x, BigInteger.ONE);
+		}
+
+		public int compareTo(BigInteger other) {
 			return compareTo(BigFractional.of(other));
 		}
 
@@ -254,7 +281,7 @@ class Solution extends ASolution {
 			return d.signum() * other.d.signum() * n.multiply(other.d).compareTo(other.n.multiply(d));
 		}
 
-		public boolean numberEquals(long other) {
+		public boolean numberEquals(BigInteger other) {
 			return compareTo(other) == 0;
 		}
 
@@ -277,9 +304,13 @@ class Solution extends ASolution {
 
 	}
 
-	public record Pos3d(long x, long y, long z) {
+	public record Pos3d(BigInteger x, BigInteger y, BigInteger z) {
 
-		public long get(int index) {
+		public Pos3d(long x, long y, long z) {
+			this(BigInteger.valueOf(x), BigInteger.valueOf(y), BigInteger.valueOf(z));
+		}
+
+		public BigInteger get(int index) {
 			return switch (index) {
 			case 0 -> x;
 			case 1 -> y;
@@ -288,43 +319,59 @@ class Solution extends ASolution {
 			};
 		}
 
-		public Pos3d dividedBy(long factor) {
-			return new Pos3d(x / factor, y / factor, z / factor);
+		public Pos3d dividedBy(BigInteger factor) {
+			return new Pos3d(x.divide(factor), y.divide(factor), z.divide(factor));
 		}
 
 		public Pos3d minus(Pos3d other) {
-			return add(other.times(-1L));
+			return add(other.times(BigInteger.ONE.negate()));
 		}
 
 		public Pos3d add(Pos3d other) {
-			return new Pos3d(x + other.x, y + other.y, z + other.z);
+			return new Pos3d(x.add(other.x), y.add(other.y), z.add(other.z));
 		}
 
 		public Pos3d times(long factor) {
-			return new Pos3d(factor * x, factor * y, factor * z);
+			return times(BigInteger.valueOf(factor));
+		}
+
+		public Pos3d times(BigInteger factor) {
+			return new Pos3d(x.multiply(factor), y.multiply(factor), z.multiply(factor));
 		}
 
 	}
 
-	public record Pos4d(long x, long y, long z, long t) {
+	public record Pos4d(BigInteger x, BigInteger y, BigInteger z, BigInteger t) {
+
+		public Pos4d(long x, long y, long z, long t) {
+			this(BigInteger.valueOf(x), BigInteger.valueOf(y), BigInteger.valueOf(z), BigInteger.valueOf(t));
+		}
 
 		public static Pos4d ofSpacetime(Pos3d space, long time) {
+			return new Pos4d(space.x, space.y, space.z, BigInteger.valueOf(time));
+		}
+
+		public static Pos4d ofSpacetime(Pos3d space, BigInteger time) {
 			return new Pos4d(space.x, space.y, space.z, time);
 		}
 
 		public Pos4d plus(Pos4d other) {
-			return new Pos4d(x + other.x, y + other.y, z + other.z, t + other.t);
+			return new Pos4d(x.add(other.x), y.add(other.y), z.add(other.z), t.add(other.t));
 		}
 
-		public Pos4d times(long factor) {
-			return new Pos4d(factor * x, factor * y, factor * z, factor * t);
+		public Pos4d times(BigInteger factor) {
+			return new Pos4d(x.multiply(factor), y.multiply(factor), z.multiply(factor), t.multiply(factor));
+		}
+
+		public Pos4d times(Pos4d other) {
+			return new Pos4d(x.multiply(other.x), y.multiply(other.y), z.multiply(other.z), t.multiply(other.t));
 		}
 
 		public Pos3d space() {
 			return new Pos3d(x, y, z);
 		}
 
-		public long get(int index) {
+		public BigInteger get(int index) {
 			return switch (index) {
 			case 0 -> x;
 			case 1 -> y;
@@ -334,7 +381,7 @@ class Solution extends ASolution {
 			};
 		}
 
-		public Pos4d set(int index, long value) {
+		public Pos4d set(int index, BigInteger value) {
 			switch (index) {
 			case 0:
 				return new Pos4d(value, y, z, t);

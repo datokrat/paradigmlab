@@ -13,9 +13,12 @@ public class SolutionTest {
 	@Test
 	public void test() {
 		var s = new Solution();
-		assertThat(s.invertForSample(new Pos4d(-2, 1, -2, 1)), is(new Pos3d(8, 0, 0)));
-		assertThat(s.invertForSample(new Pos4d(-1, -1, -2, 1)), is(new Pos3d(0, 8, 0)));
-		assertThat(s.invertForSample(new Pos4d(1, -6, 8, 0)), is(new Pos3d(0, 0, 8)));
+		s.parseInput();
+		MatrixInversionTableau tableau = s.createTableau();
+		long denom = tableau.left.getAsLong(0, 0);
+		assertThat(s.invertWithTableau(tableau, new Pos4d(-2, 1, -2, 1)), is(new Pos4d(denom, 0, 0, 0)));
+		assertThat(s.invertWithTableau(tableau, new Pos4d(-1, -1, -2, 1)).space(), is(new Pos3d(0, denom, 0)));
+		assertThat(s.invertWithTableau(tableau, new Pos4d(1, -6, 8, 0)).space(), is(new Pos3d(0, 0, denom)));
 	}
 
 }

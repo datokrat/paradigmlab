@@ -8,6 +8,14 @@ public class IntegralMatrix {
 
 	private List<List<BigInteger>> rows;
 
+	public int getHeight() {
+		return rows.size();
+	}
+
+	public int getWidth() {
+		return rows.get(0).size();
+	}
+
 	public IntegralMatrix(int height, int width) {
 		rows = new ArrayList<>();
 		for (int i = 0; i < height; i++) {
@@ -48,6 +56,14 @@ public class IntegralMatrix {
 	public void multiplyRow(int row, BigInteger factor) {
 		for (int x = 0; x < rows.get(0).size(); x++) {
 			set(row, x, get(row, x).multiply(factor));
+		}
+	}
+
+	public void swap(int rowA, int rowB) {
+		for (int x = 0; x < rows.get(0).size(); x++) {
+			BigInteger tmp = rows.get(rowA).get(x);
+			rows.get(rowA).set(x, rows.get(rowB).get(x));
+			rows.get(rowB).set(x, tmp);
 		}
 	}
 
