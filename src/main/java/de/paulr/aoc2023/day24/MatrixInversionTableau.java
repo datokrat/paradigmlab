@@ -37,7 +37,7 @@ public class MatrixInversionTableau {
 		right.swap(rowA, rowB);
 	}
 
-	public void gauss() {
+	public boolean gauss() {
 		int squareSize = Math.min(left.getWidth(), left.getHeight());
 		for (int i = 0; i < squareSize; i++) {
 			int j = 0;
@@ -46,7 +46,7 @@ public class MatrixInversionTableau {
 			}
 			if (j + i == left.getHeight()) {
 				// Found no row to pivot
-				throw new RuntimeException();
+				return false;
 			}
 			swap(i, j + i);
 			for (int k = i + 1; k < left.getHeight(); k++) {
@@ -68,6 +68,7 @@ public class MatrixInversionTableau {
 		for (int i = 0; i < squareSize; i++) {
 			multiplyRow(i, lcm.divide(left.get(i, i)));
 		}
+		return true;
 	}
 
 }
